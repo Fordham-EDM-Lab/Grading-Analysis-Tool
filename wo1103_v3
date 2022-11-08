@@ -1,0 +1,205 @@
+import pandas as pd
+import csv
+import numpy as np
+import matplotlib.pyplot as plt
+import plotly.express as px
+from collections import defaultdict
+
+# get df from csv (in local directory)
+df = pd.read_csv(r'C:\Users\jeong\research\grading-data-6-17-22.csv')
+
+# general tools
+# returns filtered dataframe. Each condition should be passed as column name = LIST of targets
+    # e.g. "filter(df, crsTitle = ['PHYSICS I LAB'], facultyID = ['F18125', 'F97128'])" returns df with 84 rows
+def filter(df, **kwargs):
+    for key in kwargs.keys():
+        df = df[(df[key]).isin(kwargs.get(key))]
+    return df
+
+# check if object is nan
+def isNaN(string):
+    return string != string
+
+# returns a dictionary of "facultyID: number of unique CRNs attributed to this instructor"
+def total_courses_per_instructor(df):
+    faculty_list = np.unique(list(df['facultyID']))
+    faculty_courses = { i : 0 for i in faculty_list }
+    for i in faculty_list:
+        faculty_history = filter(df, facultyID = [i])
+        faculty_courses.update({i: (len(np.unique(list((faculty_history)['CRN']))))})
+    return faculty_courses
+
+# returns a dictionary of "CourseCode: number of unique CRNs attributed to this CourseCode"
+def total_courses_per_coursecode(df):
+    course_list = np.unique(list(df['CourseCode']))
+    dict_courses = { i : 0 for i in course_list }
+    for i in course_list:
+        course_history = filter(df, CourseCode = [i])
+        dict_courses.update({i: (len(np.unique(list((course_history)['CRN']))))})
+    return dict_courses
+
+# returns a dictionary of "CourseCode: number of unique instructors attributed to this CourseCode"
+def total_instructors_per_coursecode(df):
+    course_list = np.unique(list(df['CourseCode']))
+    dict_courses = { i : 0 for i in course_list }
+    for i in course_list:
+        course_history = filter(df, CourseCode = [i])
+        dict_courses.update({i: (len(np.unique(list((course_history)['facultyID']))))})
+    return dict_courses
+
+# returns a dictionary of "CourseCode: number of enrollments attributed to this CourseCode"
+def total_enrollment_per_coursecode(df):
+    course_list = np.unique(list(df['CourseCode']))
+    dict_courses = { i : 0 for i in course_list }
+    for i in course_list:
+        course_history = filter(df, CourseCode = [i])
+        dict_courses.update({i: (len(course_history.index))})
+    return dict_courses
+
+# returns list of instructors that taught between x and y sections (inclusive)
+def instructor_with_sections(df, x, y):
+    return([k for (k,v) in total_courses_per_instructor(df).items() if x <= v <= y])
+
+# returns Average, SD, Z-score of GPA of one section, for a particular CourseCode course_name, for sections with more than class_size students
+    # e.g. gpa_by_section(final_df, 'Mathematics 2006', 6) returns a dataframe of columns: CRN, Instructor, GPA, SD, Class Size, Z-score
+    # class size was separately computed. (did not use class_size column in original df as it was inaccurate.)
+def gpa_by_section(df, course_name, class_size):
+    sections = list(np.unique((filter(df, CourseCode = [course_name])['CRN'])))
+    to_return = pd.DataFrame(columns =['CRN', 'Instructor', 'GPA', 'SD', 'Class Size'])
+    
+    for i in sections:
+        filtered_data = filter(df, CourseCode = [course_name], CRN = [i])
+        to_return.loc[len(to_return)] = [i, (filtered_data.mode()['facultyID'][0]), np.mean(((filtered_data)['finGradN']).to_numpy()), np.std(((filtered_data)['finGradN']).to_numpy()), len(filtered_data.index)]
+
+    to_return = to_return[to_return['Class Size'] >= class_size]
+
+    ttl_mean = (np.mean(to_return.GPA.values.tolist()))
+    ttl_sd = (np.std(to_return.GPA.values.tolist()))
+    to_return['Z-score'] = (to_return['GPA']-ttl_mean)/ttl_sd
+
+    return to_return
+
+
+# returns cleaned df
+def clean_df(df):
+    df = df.copy()
+    df.replace(" ", np.nan, inplace=True)
+    df['finGradN'] = df['finGradN'].astype('float')
+    df['facultyID']=df['facultyID'].astype(str)
+    # drop administrative CBA/FCRH as they are not actual students
+    df.drop(df[df['ProgCode'] == 'Administrative CBA'].index,  inplace = True)
+    df.drop(df[df['ProgCode'] == 'Administrative FCRH'].index, inplace = True)
+    # creates a new CRN: CRN + last two digits of year + one digit based on semester
+        # e.g. oldCRN 11135, Summer 2010 course -> CRN: 11135102
+    df[['sem', 'year']] = df['term'].str.split(' ', n = 1, expand = True)
+    df['year'] = pd.to_numeric(df['year'])
+    df['year'] = df.apply(lambda x: x['year'] % 1000, axis=1)
+    df.loc[df['sem'] == 'Fall', 'sem'] = 0
+    df.loc[df['sem'] == 'Spring', 'sem'] = 1
+    df.loc[df['sem'] == 'Summer', 'sem'] = 2
+    df['sem'] = pd.to_numeric(df['sem'])
+    df.rename(columns = {'CRN':'oldCRN'}, inplace = True)
+    df['oldCRN'] = df['oldCRN'].astype(str)
+    df['year'] = df['year'].astype(str)
+    df['sem'] = df['sem'].astype(str)
+    df['CRN'] = df['oldCRN'] + df['year']+ df['sem']
+
+    df['NumCode'] = df['NumCode'].fillna(0)
+    df['NumCode'] = df['NumCode'].astype(int)
+    df['NumCode'] = df['NumCode'].astype(str)
+    df['CourseCode'] = df['ProgCode'] + " " + df['NumCode']
+
+    return df
+
+# original df remains unchanged. cleaned data is put in new dataframe final_df
+final_df = clean_df(df)
+
+
+# computing necessary variables
+courses = np.unique(list(final_df['CourseCode']))
+instructors = np.unique(list(final_df['facultyID']))
+tcpc = total_courses_per_coursecode(final_df)
+tipc = total_instructors_per_coursecode(final_df)
+tepc = total_enrollment_per_coursecode(final_df)
+tcpi = total_courses_per_instructor(final_df)
+def find_top_courses(df, section_min, instructor_min, enrollment_min):
+    return_courses = []
+    for i in np.unique(list(final_df['CourseCode'])): 
+        if tcpc[i]>=section_min and tipc[i]>=instructor_min and tepc[i]>=enrollment_min:
+            return_courses.append(i)
+    return return_courses
+
+
+# metric
+    # single metric (average of Z-scores of every section they taught) for each individual instructor
+
+# "variables": modify as needed.
+target_course_list = ['English 1102']    # which master list of courses to go through
+#top_courses = find_top_courses(df, 36, 5, 500)
+#target_course_list = top_courses    
+target_instructor_list = instructors # which instructors to pull data for
+
+# run time tracker
+current_index = 0
+total_index = len(target_course_list)
+
+# loop through every course in target_course_list
+# returns dict "instructor_zscore_list" of {facultyID: list of Z-scores obtained}
+instructor_zscore_list = defaultdict(list)
+for i in target_course_list:
+    # disregards sections with class size less than three standard deviations below the average class size of that course
+    all_class_sizes = (list(gpa_by_section(final_df, i, 0)['Class Size']))
+    all_sections = gpa_by_section(final_df, i, (np.mean(all_class_sizes))-3*(np.std(all_class_sizes)))
+
+    # run time tracker
+    current_index+=1
+    print("current index: "+str(current_index)+" out of "+str(total_index))
+
+    # fetches all Z-scores for this particular course for each instructor, then appends to instructor's slot in dict
+    for j in np.unique(list(all_sections['Instructor'])):
+        if j in target_instructor_list:
+            to_append = list((filter(all_sections, Instructor = [j]))['Z-score'])
+            for k in to_append:
+                instructor_zscore_list[j].append(k)
+
+# returns dict "instructor_zscore_avg" of {facultyID: avg Z-score}
+instructor_zscore_avg = {}
+for i in instructor_zscore_list.keys():
+    instructor_zscore_avg[i] = np.mean(instructor_zscore_list[i])
+
+# creates df for visualization of "metric vs. num sections taught"
+zscore_secstaught_corr = pd.DataFrame(columns=['Z score', 'Num sections taught', 'Instructor'])
+for i in instructor_zscore_avg.keys():
+    zscore_secstaught_corr.loc[len(zscore_secstaught_corr)] = [instructor_zscore_avg[i], len(instructor_zscore_list[i]), i]
+
+to_graph = zscore_secstaught_corr[(zscore_secstaught_corr['Num sections taught'] <100) & (zscore_secstaught_corr['Num sections taught'] >0)]
+#fig = go.Figure(go.Scatter(mode="markers", x=to_graph['Z score'], y=to_graph['Num sections taught'], marker_symbol="circle", marker_size=3, hovertemplate=to_graph['Instructor']))
+
+# histogram of num instructors per z score bin
+plt.hist(instructor_zscore_avg.values(), bins = np.arange(-3, 3, 0.1), edgecolor = 'black')
+plt.xticks(np.arange(-3, 3, 0.5), rotation = 45)
+plt.xlabel("Z-score")
+plt.ylabel("num counts")
+plt.show()
+
+# shortlist instructors with high or low z score counts (does not perform a metric cutoff)
+def shortlist(dict, direction, z_score_cutoff, flag_percentage):
+    shortlist = []
+    for i in dict.keys():
+        count = 0
+        item = dict[i]
+        for j in item:
+            if direction == "high": 
+                if j>=z_score_cutoff:
+                    count+=1
+            elif direction == "low": 
+                if j<=-z_score_cutoff:
+                    count+=1
+        if (100*(count/len(item)) > flag_percentage):
+            shortlist.append(i)
+    return shortlist
+
+shortlist(instructor_zscore_list, "high", 2.0, 70)
+
+fig = px.scatter(to_graph, x='Z score', y='Num sections taught', hover_name='Instructor', hover_data=['Z score', 'Num sections taught'])
+fig.show()
