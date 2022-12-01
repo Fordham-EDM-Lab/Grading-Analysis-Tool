@@ -18,13 +18,15 @@ import matplotlib.pyplot as plt
 df = pd.read_csv('grading-data-6-17-22.csv')
 
 def dataCleanup(df):
-    # Data Cleaning - splitting sem/year, dropping Administrative depts, and creating a new CRN
+    # Data Cleaning - splitting sem/year, dropping Administrative depts, creating a new CRN, and creating "CourseCode" joining the ProgCode with NumCode
     df.replace(" ", np.nan, inplace=True)
     df['finGradN'] = df['finGradN'].astype('float')
 
     df.drop(df[df['ProgCode'] == 'Administrative CBA'].index,  inplace=True)
     df.drop(df[df['ProgCode'] == 'Administrative FCRH'].index, inplace=True)
 
+    # creates a new CRN: CRN + last two digits of year + one digit based on semester
+        # e.g. oldCRN 11135, Summer 2010 course -> CRN: 11135102
     df[['sem', 'year']] = df['term'].str.split(' ', 1, expand=True)
 
     df['year'] = df['year'].astype('int')
@@ -36,7 +38,14 @@ def dataCleanup(df):
 
     df.rename(columns={'CRN': 'oldCRN'}, inplace=True)
 
-    df['CRN'] = df['oldCRN'].astype(string) + df['sem'].astype(string) + df['year'].astype(string)
+    df['CRN'] = df['oldCRN'] + df['sem'] + df['year']
+
+    #creating "CourseCode" joining the ProgCode with NumCode
+    df['NumCode'] = df['NumCode'].fillna(0)
+    df['NumCode'] = df['NumCode'].astype(int)
+    df['CourseCode'] = df['ProgCode'].astype(str) + df['NumCode'].astype(str)
+
+    return df
 
 
 # perform necessary data cleanup
@@ -207,44 +216,44 @@ with open('instTable.csv', 'w', newline='') as csvfile:
 
         my_writer.writerow([uniqueInst[i], instEnroll, instSec, instCourse, AvgW, periodTT, periodTY, coursesT])
 
-# TODO: add mapping of courses x majors to tool
-# TODO: Course Level Report (courseLevel.csv)
-# TODO: when creating tables, make sure to generate a file that contains them!
 
-# separate the research code into classes that can be called to perform the specific section of the code:
 # Compute weighted average
 def avgWeighted(df, value, weight):
     return (df[weight] * df[value]).sum() / df[weight].sum()
 
 # average & std grades of all courses
 def UniversityCoursesMean(df):
-    print("This is the the GPA of all courses in the university: " +
-          avgWeighted(df, 'finGradN', 'credHrs'))
-    print("This is the Standard Deviation of all courses GPA: " +
-          df['finGradN'].std())
+    print("\nThis is the the GPA of all courses in the university: ")
+    print(avgWeighted(df, 'finGradN', 'credHrs'))
+    print("This is the Standard Deviation of all courses GPA: ")
+    print(df['finGradN'].std())
 
 # average & std grades of all students taking courses in specific department
 def DepartmentCoursesMean(df, dept):
     deptMean = df.loc[df['ProgCode'] == dept, 'finGradN'].mean()
     stdDept = df.loc[df['ProgCode'] == dept, 'finGradN'].std()
-    print("This is" + dept + "department courses mean grade: " + deptMean)
-    print("This is" + dept + "department courses grade standard deviation: " + stdDept)
+    print("\nThis is " + dept + " department courses mean grade: ")
+    print(deptMean)
+    print("This is " + dept + " department courses grade standard deviation: ")
+    print(stdDept)
 
 # average & std dev of grades of all students of a specific major (all courses in major department or not)
 def MajorDegreeMean(df, major):
     majorMean = df.loc[df['major'] == major, 'finGradN'].mean()
     stdMajor = df.loc[df['major'] == major, 'finGradN'].std()
-    print("This is" + major + "majors mean grade: " + majorMean)
-    print("This is" + major + "majors grade standard deviation: " + stdMajor)
+    print("\nThis is " + major + " majors mean grade: ")
+    print(majorMean)
+    print("This is " + major + " majors grade standard deviation: ")
+    print(stdMajor)
 
 # average & std dev of grades of all courses in the specific major's department that students with that specific major take
 def MajorDeptMean(df, major, dept):
     DMajorMean = df.loc[(df['major'] == major) & (df['ProgCode'] == dept), 'finGradN'].mean()
     stdDMajor = df.loc[(df['major'] == major) & (df['ProgCode'] == dept), 'finGradN'].std()
-    print("This is" + major +
-          "majors mean grade in its department courses: " + DMajorMean)
-    print("This is" + major +
-          "majors grade standard deviation in its department courses: " + stdDMajor)
+    print("\nThis is " + major + " majors mean grade in its department courses: ")
+    print(DMajorMean)
+    print("This is " + major + " majors grade standard deviation in its department courses: ")
+    print(stdDMajor)
 
 # average GPA, std dev, lowest and highest grades of a specific faculty.
 def FacultyAnalysis(df, fac):
@@ -252,30 +261,44 @@ def FacultyAnalysis(df, fac):
     stdFac = df.loc[df['facultyID'] == fac, 'finGradN'].std()
     facLow = df.loc[df['facultyID'] == fac, 'finGradN'].min()
     facHigh = df.loc[df['facultyID'] == fac, 'finGradN'].max()
-    print("This is" + fac + "instructor's GPA (" + FacMean + "), student's std. dev. grades (" +
-          stdFac + "), and his lowest and highest grades assigned ("+facLow+", "+facHigh+")")
+    print("\nThis is " + fac + " Faculty Analysis.")
+    print("Instructor's GPA: ")
+    print(FacMean)
+    print("Student's std. dev. grades: ")
+    print(stdFac)
+    print("Lowest and highest grades assigned: ")
+    print(facLow)
+    print(facHigh)
 
 # a list of all unique departments, majors, instructors, courses, CRNs, and students
 def unique(df):
-    req = input("Would you like a list of unique: Departments, Majors, Instructor IDs, Courses, CRNs, or Student IDs")
+    req = input("\nWould you like a list of unique Departments, Majors, Instructor IDs, Courses, CRNs, or Student IDs?\n")
     if (req == 'Departments'):
+        print("\nThese are all Departments:")
         print(uniqueDept)
-    if (req == 'Majors'):
+    elif (req == 'Majors'):
+        print("\nThese are all Majors:")
         print(uniqueMjr)
-    if (req == 'Instructor IDs'):
+    elif (req == 'Instructor IDs'):
+        print("\nThese are all Instructor IDs:")
         print(uniqueInst)
-    if (req == 'Courses'):
+    elif (req == 'Courses'):
+        print("\nThese are all Courses:")
         print(uniqueCrs)
-    if (req == 'CRNs'):
+    elif (req == 'CRNs'):
+        print("\nThese are all CRNs:")
         print(uniqueCRN)
-    if (req == 'Student IDs'):
+    elif (req == 'Student IDs'):
+        print("\nThese are all Student IDs:")
         print(uniqueStud)
     else:
         print("This is not a valid option.")
 
 # generate table of student grade distribution of all courses
 def AllCoursesGradeDist(df):
-    print(studGradeDistribution = df['finGradC'].value_counts())
+    studGradeDistribution = df['finGradC'].value_counts()
+    print("\nThis is the Student Grade Distribution over all courses: ")
+    print(studGradeDistribution)
 
 # Compute the number of enrollments using class size
 def enrollments(df, classSize):
@@ -283,10 +306,12 @@ def enrollments(df, classSize):
 
 # Create a table with number of enrollments per department 
 def DeptEnroll(df):
+    print("\nThis is the number of enrollments per university department: ")
     print(df.groupby(df['ProgCode']).apply(enrollments, 'class_size'))
 
 # Create a table |major, # of unique students|
 def StudMjrCount(df):
+    print("\nThis is the number of unique students enrolled in a major: ")
     print(df['major'].value_counts())
 
 #Instructor Grade Distribution table
@@ -295,90 +320,100 @@ def GradeDist(df):
     ranges = [2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9,3.0,3.1,3.2,3.3,3.4,3.5,3.6,3.7,3.8,3.9,4.0]
     instGradeDist = it['GPA W'].groupby(pd.cut(it['GPA W'], ranges)).count() #Number of instructors in each GPA range
     instPer = ((it['GPA W'].groupby(pd.cut(it['GPA W'], ranges)).count())/ (len(it['GPA W']))) *100 #Percentage
+    print("\nThis is the Student Grade Distribution over all instructors: ")
     print(instGradeDist)
+    print("in percentages: ")
     print(instPer)
+
 
 # MAIN:
 # initialize tool
-print("######################################################")
+print("\n\n######################################################")
 print("Welcome to Fordham's EDM Lab Grading Data Mining Tool!")
-print("######################################################")
+print("######################################################\n")
 
 Aloop = True
 while Aloop == True:
-    print("Please type your request so our tool knows what to do.")
-    print("type 'help' to see possible functions.")
+    print("\nWhich function would you like to run? Type 'help' to see possible functions.")
     # gets user input to call specific function
-    requestA = input
+    requestA = input("Please type your request so our tool knows what to do: ")
 
     if requestA == "help":
         print(
-            "AllCourseMean --> compute the GPA of all courses in the univeristy, and the grades standard deviation.\n"
-            "DeptCourseMean --> compute the GPA of all courses in the department, and the grades standard deviation.\n"
-            "MajorDegreeMean --> compute the GPA and standard deviation of all students that are majoring in a specific major taking any course (related or unrelated to their major).\n"
-            "MajorDeptMean --> compute the GPA and standard deviation of all students that are majoring in a specific major taking any course in their major's department.\n"
+            "\nGPA --> compute the GPA of all courses in the univeristy, all courses in the department, all students that are majoring in a specific major taking any course (related or unrelated to their major), all students that are majoring in a specific major taking any course in their major's department, and the grades standard deviation. Also, generates a table of student grade distribution of all courses and a a table with instructor weighted GPA distrbution. \n"
             "FacultyAnalysis --> Compute the GPA over all faculty's courses, grades standard deviation, and lowest and higher grade.\n"
-            "UniqueList --> get a list of all unique departments, majors, instructors, courses, CRNs, and students\n"
-            "AllCoursesGradeDist --> generate table of student grade distribution of all courses\n"
             "DeptEnroll --> Create a table with number of enrollments per department\n"
             "StudMjrCount --> Create a table with number of students per major\n"
+            "UniqueList --> get a list of all unique departments, majors, instructors, courses, CRNs, and students\n"
             "Skip --> you want to create specific graphs and illustrations of the data\n"
-            "GradeDist --> create a table with instructor weighted GPA distrbution\n"
+            "All --> run all commands above\n"
         )
 
-    if requestA == "AllCourseMean":
-        UniversityCoursesMean(df)
+    elif requestA == "GPA":
+        dept = input("\nWhich department? Use a valid Department\n")
+        major = input("Which major? Use a valid Major\n")
+        if dept not in uniqueDept:
+            print("This is not a valid Department. If you need to see a list of valid departments, type UniqueList.")
+        elif major not in uniqueMjr:
+            print("This is not a valid Major. If you need to see a list of valid majors, type UniqueList.")
+        else:
+            UniversityCoursesMean(df)
+            AllCoursesGradeDist(df)
+            GradeDist(df)
+            DepartmentCoursesMean(df, dept)
+            MajorDegreeMean(df, major)
+            MajorDeptMean(df, major, dept)
 
-    if requestA == "DeptCourseMean":
-        # TODO: check if it is actually a valid ProgCode
-        dept = input("Which department? Use a valid 'ProgCode'")
-        DepartmentCoursesMean(df, dept)
+    elif requestA == "FacultyAnalysis":
+        faculty = input("\nWhich faculty? Use a valid Faculty ID.\n")
+        if faculty not in uniqueInst:
+            print("This is not a valid Faculty ID. If you need to see a list of valid instructors, type UniqueList.")
+        else:
+            FacultyAnalysis(df, faculty)
 
-    if requestA == "MajorDegreeMean":
-        # TODO: check if it is actually a valid major
-        major = input("Which major? Use a valid 'major'")
-        MajorDegreeMean(df, major)
-
-    if requestA == "MajorDeptMean":
-        # TODO: check if it is actually a valid major
-        major = input("Which major? Use a valid 'major'")
-        # TODO: check if it is actually a valid ProgCode
-        dept = input("From which department? Use a valid 'ProgCode'")
-        MajorDeptMean(df, major, dept)
-
-    if requestA == "FacultyAnalysis":
-        # TODO: check if it is actually a valid facultyID
-        faculty = input("Which faculty? Use a valid 'facultyID'")
-        FacultyAnalysis(df, faculty)
-
-    if requestA == "UniqueList":
-        unique(df)
-
-    if requestA == "AllCoursesGradeDist":
-        AllCoursesGradeDist(df)
-
-    if requestA == "DeptEnroll":
+    elif requestA == "DeptEnroll":
         DeptEnroll(df)
     
-    if requestA == 'StudMjrCount':
+    elif requestA == 'StudMjrCount':
         StudMjrCount(df)
-    
-    if requestA == 'GradeDist':
-        GradeDist(df)
 
-    if requestA == 'Skip':
+    elif requestA == "UniqueList":
+        unique(df)
+
+    elif requestA == 'Skip':
         Aloop = False
+
+    elif requestA == "All":
+        dept = input("\nWhich department? Use a valid Department.\n")
+        major = input("Which major? Use a valid Major.\n")
+        faculty = input("Which faculty? Use a valid Faculty ID.\n")
+        if dept not in uniqueDept:
+            print("This is not a valid Department. If you need to see a list of valid departments, type UniqueList.")
+        elif major not in uniqueMjr:
+            print("This is not a valid Major. If you need to see a list of valid majors, type UniqueList.")
+        elif faculty not in uniqueInst:
+            print("This is not a valid Faculty ID. If you need to see a list of valid instructors, type UniqueList.")
+        else:
+            UniversityCoursesMean(df)
+            DepartmentCoursesMean(df, dept)
+            MajorDegreeMean(df, major)
+            MajorDeptMean(df, major, dept)
+            FacultyAnalysis(df, faculty)
+            AllCoursesGradeDist(df)
+            DeptEnroll(df)
+            StudMjrCount(df)
+            GradeDist(df)
     
     else:
         print("This is not a valid request. Type 'help' if you need valid options.\n")
 
-    rep = input("Do you want to perform any other analysis? (yes/no)")
-    if rep == 'no':
-        Aloop = False
+    if Aloop == True:
+        rep = input("\nDo you want to perform any other analysis? (yes/no)  ")
+        if rep == 'no':
+            Aloop = False
+
 
 #RESEARCH CODE:
-#TODO: save each into a file instead of printing it out.
-# separate the research code into classes that can be called to create the specific illustrations of the data:
 #Function to create a list of conssecutive numbers spaced out as needed (to use when creating bins for a graph)
 def createList(r1, r2, space):
     if (r1 == r2):
@@ -546,67 +581,60 @@ def CourseGPA(df):
 
 Bloop = True
 while Bloop == True:
-    wantGraphs = input("Would you like to generate a illustration or graph of the data? (yes/no)")
-    if wantGraphs == 'no':
-        Bloop = False
-
-    print("Please type your request so our tool knows what to do.")
-    print("type 'help' to see possible graphs and illustrations.")
+    print("\nWhat graphs and illustrations would you like to create? Type 'help' to see possible options.")
     # gets user input to call specific function
-    requestB = input
+    requestB = input("Please type your request so our tool knows what to do: ")
 
     if requestB == "help":
         print(
-            "DeptGPA --> department grades bar chart (y=gpa, x=department) for departments with enrollments > 600\n"
-            "DeptSize --> department size bar chart (y=enrollments, x=department) for departments with enrollments > 600\n"
-            "DeptEnrollGPA --> bar chart that shows number of enrollments and department average grades simultaneously.\n"
-            "DeptStudGPA --> total number of students in a department vs. grades in that department scatter plot, for departments with enrollments > 600\n"
-            "InstGPA --> instructor Grade Distribution (histogram) -- frequency of grades\n"
-            "InstGPATrunc --> instructor Grade Distribution histogram -- frequency of grades, excluding inst teaching < 10 sections\n"
-            "InstEnroll --> instructor Enrollment Distribution histogram\n"
-            "InstEnrollTrunc --> instructor Enrollment Distribution histogram for instructors with the number of students taught(enrollements) > 200\n"
-            "MjrGPA --> gpa vs major size (number of enrollments) scatter plot\n"
-            "MjrGPATrunc --> gpa vs major size (number of enrollments) scatter plot for majors with > 10,000 enrollments\n"
-            "MjrEnroll --> major vs enrollments bar chart, for majors with > 10,000 enrollments\n"
-            "CourseGPA --> distribution of grades bar chart for courses with > 70 sections\n"
+            "\nDeptAnalysis --> bar chart of department grades, department size, number of enrollments and department GPA. Also, generates a scatter plot of total number of students in a department and grades in that department. All illustrations have a threshold of departments with enrollments > 600.\n"
+            "InstAnalysis --> instructor Grade Distribution (histogram) -- frequency of grades and a threshold version, excluding inst teaching < 10 sections; instructor Enrollment Distribution (histogram), and a threshold version where number of students taught(enrollements) > 200.\n"
+            "MjrAnalysis --> gpa vs major size (number of enrollments) scatter plot, and a threshold version for majors with > 10,000 enrollments; and major vs enrollments bar chart, for majors with > 10,000 enrollments\n"
+            "CrsAnalysis--> distribution of grades bar chart for courses with > 70 sections\n"
+            "All --> run all commands above\n"
         )
 
-    if requestB == "DeptGPA":
+    elif requestB == "DeptAnalysis":
         DeptGPA(df)
-
-    if requestB == "DeptSize":
         DeptSize(df)
-
-    if requestB == "DeptEnrollGPA":
         DeptEnrollGPA(df)
-
-    if requestB == "DeptStudGPA":
         DeptStudGPA(df)
 
-    if requestB == "InstGPA":
+    elif requestB == "InstAnalysis":
         InstGPA(df)
-
-    if requestB == "InstGPATrunc":
         InstGPATrunc(df)
-
-    if requestB == "InstEnroll":
         InstEnroll(df)
-
-    if requestB == "InstEnrollTrunc":
         InstEnrollTrunc(df)
 
-    if requestB == "MjrGPA":
+    elif requestB == "MjrAnalysis":
         MjrGPA(df)
-
-    if requestB == "MjrGPATrunc":
         MjrGPATrunc(df)
-
-    if requestB == "MjrEnroll":
         MjrEnroll(df)
 
-    if requestB == "CourseGPA":
+    elif requestB == "CourseAnalysis":
         CourseGPA(df)
-    
+
+    elif requestB == "All":
+        DeptGPA(df)
+        DeptSize(df)
+        DeptEnrollGPA(df)
+        DeptStudGPA(df)
+        InstGPA(df)
+        InstGPATrunc(df)
+        InstEnroll(df)
+        InstEnrollTrunc(df)
+        MjrGPA(df)
+        MjrGPATrunc(df)
+        MjrEnroll(df)
+        CourseGPA(df)
+
     else:
         print("This is not a valid request. Type 'help' if you need valid options.\n")
 
+    wantGraphs = input("Would you like to generate any other illustration or graph of the data? (yes/no)  ")
+    if wantGraphs == 'no':
+        Bloop = False
+
+print("\n###############################################################")
+print("Thank you for using Fordham's EDM Lab Grading Data Mining Tool!")
+print("###############################################################\n")
