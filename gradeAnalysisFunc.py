@@ -361,12 +361,11 @@ def InstGPATrunc(df, user_directory, min_sections = None, max_sections = None, c
 
     InstTable.reset_index()
     if csv:
-        save_path = os.path.join(user_directory, 'instTableTrunc.csv')
+        save_path = os.path.join(user_directory, 'instTableGPAVsInst.csv')
         print("\n\nFile Created:", f" {save_path}\n\n")
 
         InstTable.to_csv(save_path, encoding='utf-8-sig')
 
-    print("\n\nFile Created:", f" {save_path}\n\n")
     it = InstTable.plot.hist(x='Instructor', y='GPA W', figsize=(13,3), bins=bins, color='steelblue', legend=False)
     it.set_xlabel("Weighted GPA")
     it.set_ylabel("Number of Instructors")
@@ -390,7 +389,7 @@ def InstEnrollTrunc(df, user_directory, min_enrollments = None, max_enrollments 
     InstTable.reset_index()
 
     if csv:
-        save_path = os.path.join(user_directory, 'instTableTrunc.csv')
+        save_path = os.path.join(user_directory, 'instTableEnrollVsInst.csv')
         print("\n\nFile Created:", f" {save_path}\n\n")
         InstTable.to_csv(save_path, encoding='utf-8-sig')
 
