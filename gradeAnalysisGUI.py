@@ -34,11 +34,11 @@ class GradingAnalysisTool:
         )
 
 
-        self.min_sections_threshold = None #
         self.max_sections_threshold = None #
         self.popup_box_threshold = None
         self.analysis_checkbox = None
         self.csv_checkbox = None
+        self.heatmap_checkbox = None
 
         self.confirm_button = None
 
@@ -125,6 +125,14 @@ class GradingAnalysisTool:
 
     def thresholds_widget(self, state='disabled', where=None, which=None):
         self.logger.info(f"Setting up thresholds widget for: {which}")
+        for threshold_widget in [self.min_enrollment_threshold, self.max_enrollment_threshold,
+                         self.min_sections_threshold, self.max_sections_threshold]:
+            if threshold_widget is not None:
+                try:
+                    threshold_widget.destroy()
+                    self.logger.debug(f"Destroyed widget: {type(threshold_widget).__name__}")
+                except Exception as e:
+                    self.logger.error(f"Error destroying widget {type(threshold_widget).__name__}: {e}")
 
         if where is None:
             where = self.root
@@ -177,7 +185,19 @@ class GradingAnalysisTool:
         self.csv_checkbox.create_checkbox(where=where, text='CSV File', state=state, row=0, column=4, help_text='Check this box to create a csv')
         self.logger.info("CSV checkbox widget created successfully")
 
-    def create_analysis_checkboxes(self, where=None):
+    # def heatmap_checkbox_widget(self, state='disabled', where=None, row=0, column=0):
+    #     self.logger.info("Starting setup of Heatmap checkbox widget")
+
+    #     if where is None:
+    #         where = self.root
+    #         self.logger.debug("Default 'where' parameter used: self.root")
+
+    #     self.heatmap_checkbox = gaw.CheckboxWidget()
+    #     self.heatmap_checkbox.create_checkbox(where=where, text='Heatmap', state=state, row=row, column=column, help_text='Check this box to create a heatmap')
+    #     self.logger.info("Heatmap checkbox widget created successfully")
+
+
+    def create_analysis_checkboxes(self, where=None, checkbox_flags=None):
         self.logger.info("Starting setup of analysis checkboxes")
 
         if where is None:
@@ -188,28 +208,15 @@ class GradingAnalysisTool:
         analysis_options = {
             'GPA Analysis': 'Check for GPA Analysis, check Enrollment Analysis alongside GPA to take both GPA and Enrollment into consideration',
             'Enrollment Analysis': 'Check for Enrollment Analysis, check GPA analysis alongside Enrollment Analysis to take both GPA and Enrollment into consideration',
+            'Heatmap': 'Check for heatmap',
         }
+
         self.logger.debug(f"Analysis options set: {analysis_options}")
 
         self.analysis_checkbox = gaw.CheckboxWidget()
-        self.analysis_checkbox.create_multiple_checkboxes(options=analysis_options, state='normal', where=where, row=0, column=5)
+        self.analysis_checkbox.create_multiple_checkboxes(options=analysis_options, state='normal', flags = checkbox_flags, where=where, row=0, column=5)
         self.logger.info("Analysis checkboxes created successfully")
 
-    def get_analysis_checkboxes(self):
-        self.logger.info("Retrieving analysis checkboxes")
-
-        if self.analysis_checkbox is None:
-            self.logger.warning("Analysis checkboxes not found")
-            return None
-        
-        if self.analysis_checkbox.get_selected_analyses().get('GPA Analysis') and not self.analysis_checkbox.get_selected_analyses().get('Enrollment Analysis'):
-            return 'gpa'
-        
-        if self.analysis_checkbox.get_selected_analyses().get('Enrollment Analysis') and not self.analysis_checkbox.get_selected_analyses().get('GPA Analysis'):
-            return 'enrollment'
-        
-        if self.analysis_checkbox.get_selected_analyses().get('GPA Analysis') and self.analysis_checkbox.get_selected_analyses().get('Enrollment Analysis'):
-            return 'both'
         
     def thresholds_on_root(self, which=None):
         self.logger.info("Setting up thresholds on root")
@@ -217,16 +224,17 @@ class GradingAnalysisTool:
         self.thresholds_widget(state='normal', which=which)
         self.logger.debug("Thresholds widget setup completed")
 
-        self.create_analysis_checkboxes(where=self.root)
+        self.create_analysis_checkboxes(where=self.root, checkbox_flags=[True,True,True])
         self.logger.debug("Analysis checkboxes created")
 
         self.csv_checkbox_widget(state='normal', where=self.root)
         self.logger.debug("CSV checkbox widget created")
 
+
         self.logger.info("Thresholds setup on root completed")
 
         
-    def threshold_popup(self, which):
+    def threshold_popup(self, which, analysis=False, flags=None):
         self.logger.info(f"Opening threshold popup for: {which}")
 
         self.popup_box_threshold = tk.Toplevel(self.root)
@@ -237,8 +245,9 @@ class GradingAnalysisTool:
         self.thresholds_widget(state='normal', where=self.popup_box_threshold, which=which)
         self.logger.info(f"Threshold widgets for '{which}' added to popup")
 
-        self.create_analysis_checkboxes(where=self.popup_box_threshold)
-        self.logger.info("Analysis checkboxes added to popup")
+        if analysis:
+            self.create_analysis_checkboxes(where=self.popup_box_threshold, checkbox_flags=flags)
+            self.logger.info("Analysis checkboxes added to popup")
 
         self.csv_checkbox_widget(state='normal', where=self.popup_box_threshold)
         self.logger.info("CSV checkbox widget added to popup")
@@ -271,25 +280,29 @@ class GradingAnalysisTool:
         self.reset_gui()
         self.logger.info("GUI reset after command execution")
 
+    def get_valid_integer(self, threshold = gaw.ThresholdWidget()):
+        if threshold is not None:
+            try:
+                value = threshold.get_entry_value()
+                return int(value) if value is not None else None
+            except ValueError:
+                self.logger.error(f"Value for {threshold} is not a valid integer.")
+                return None
+        else:
+            self.logger.warning(f"Threshold not found")
+            return None
 
     def get_thresholds(self):
         self.logger.info("Retrieving threshold values")
 
-
         if self.min_enrollment_threshold is not None:
-            min_enrollment_threshold = self.min_enrollment_threshold.get_entry_value()
-            max_enrollment_threshold = self.max_enrollment_threshold.get_entry_value()
-            self.min_enrollment = min_enrollment_threshold if min_enrollment_threshold else None
-            self.max_enrollment = max_enrollment_threshold if max_enrollment_threshold else None
-
+            self.min_enrollment = self.get_valid_integer(self.min_enrollment_threshold)
+        if self.max_enrollment_threshold is not None:
+            self.max_enrollment = self.get_valid_integer(self.max_enrollment_threshold)
         if self.min_sections_threshold is not None:
-            min_sections_threshold = self.min_sections_threshold.get_entry_value()
-            max_sections_threshold = self.max_sections_threshold.get_entry_value()
-            self.min_sections = min_sections_threshold if min_sections_threshold else None
-            self.max_sections = max_sections_threshold if max_sections_threshold else None
-
-
-
+            self.min_sections = self.get_valid_integer(self.min_sections_threshold)
+        if self.max_sections_threshold is not None:
+            self.max_sections = self.get_valid_integer(self.max_sections_threshold)
 
         self.logger.debug(f"Thresholds set - Min Enrollment: {self.min_enrollment}, Max Enrollment: {self.max_enrollment}, Min Sections: {self.min_sections}, Max Sections: {self.max_sections}")
 
@@ -349,6 +362,7 @@ class GradingAnalysisTool:
             "Instructor Analysis": self.command_InstAnalysis,
             "Major Analysis": self.command_MjrAnalysis,
             "Course Analysis": self.command_CrsAnalysis,
+            "Student Level Analysis": self.command_StudentLevelAnalysis,
             "Run All Commands": self.command_All_Commands,
             "Quit": self.quit_program
         }
@@ -368,6 +382,19 @@ class GradingAnalysisTool:
 
 ##########################################################################################
 ##specific functions
+        
+    def numpy_array_metadata(self, arr):
+        if arr.size == 0:
+            print("The array is empty.")
+            return
+
+        print(f"Number of Unique Elements: {arr.size}")
+        print(f"Data Type of Elements: {arr.dtype}")
+
+        if arr.ndim == 1 and arr.size >= 5:
+            print("First 5 Elements:")
+            print(arr[:5])
+
 
     def quit_program(self):
         self.logger.info("Quitting Program")
@@ -497,9 +524,11 @@ class GradingAnalysisTool:
         self.logger.info("Resetting the GUI")
 
         # Reset state variables
-        self.dept = None
-        self.major = None
-        self.faculty = None
+        self.dept = self.major = self.faculty = self.min_enrollment = self.max_enrollment = \
+        self.min_sections = self.max_sections = None
+
+
+
         self.logger.debug("State variables reset")
 
         for widget in [self.departments_listbox, self.faculty_listbox, self.popup_box_threshold, self.csv_checkbox, self.analysis_checkbox,
@@ -508,6 +537,9 @@ class GradingAnalysisTool:
             if widget is not None:
                 widget.destroy()
                 self.logger.debug(f"Widget destroyed: {type(widget).__name__}")
+
+        self.min_enrollment_threshold = \
+        self.min_sections_threshold = self.max_enrollment_threshold = self.max_sections_threshold = None
 
         try:
             self.setup_gui()
@@ -683,7 +715,7 @@ class GradingAnalysisTool:
 
     def populate_unique_listbox(self):
         self.logger.info("Populating unique listbox")
-        self.unique_list = ["Departments", "Majors", "Instructor IDs", "Courses", "UniqueCourseID", "Student IDs", "All"]
+        self.unique_list = ["Departments", "Majors", "Instructor IDs", "Courses", "UniqueCourseID", "Student IDs", "All", "Export All"]
         
         for unique in self.unique_list:
             self.unique_listbox.insert(parent='', index=tk.END, values=(unique,))
@@ -731,6 +763,8 @@ class GradingAnalysisTool:
             self.popup(title="Instructor Analysis Help", popup_text="\ninstructor Grade Distribution (histogram) -- frequency of grades and a threshold version, \n excluding inst teaching < 10 sections; instructor Enrollment Distribution (histogram), and a threshold version \n where number of students taught(enrollments) > 200.\n\n")
         elif help_output == "Major Analysis":
             self.popup(title="Major Analysis Help", popup_text="\ngpa vs major size (number of enrollments) scatter plot, and a threshold version for majors with \n > 10,000 enrollments; and major vs enrollments bar chart, for majors with > 10,000 enrollments\n\n")
+        elif help_output == "Student Level Analysis":
+            self.popup(title="Student Level Analysis Help", popup_text="\n Creates a graph comparing student level vs Avergae GPA and also creates a heat map of student level vs course level,\n where the blue colors indicate a low gpa and the red colors indicate a high gpa\n\n")
         elif help_output == "Course Analysis":
             self.popup(title="Course Analysis Help", popup_text="\nCreates a graph of grade distribution of courses with over 70 sections")
         elif help_output == "Run All Commands":
@@ -971,7 +1005,7 @@ class GradingAnalysisTool:
         self.commands_listbox.grid_forget()
 
         self.run_command_button_toggle(state="disabled")
-        self.faculty_listbox_widget(row=3, column=0)
+        self.faculty_listbox_widget(row=3, column=1)
         self.populate_faculty_listbox()
         self.confirm_faculty_selection()
         self.logger.debug("Faculty Analysis command setup completed")
@@ -1013,29 +1047,47 @@ class GradingAnalysisTool:
     def run_unique_analysis(self):
         self.logger.info(f"Running unique analysis for selection: {self.unique_selection}")
         if (self.unique_selection == 'Departments'):
-            print(gaf.uniqueDept)
+            print('Departments: \n\n')
+            self.numpy_array_metadata(arr=gaf.uniqueDept)
+            print('\n\n')
         elif (self.unique_selection == 'Majors'):
-            print(gaf.uniqueMjr)
+            print('Majors: \n\n')
+            self.numpy_array_metadata(arr=gaf.uniqueMjr)
+            print('\n\n')
         elif (self.unique_selection == 'Instructor IDs'):
-            print(gaf.uniqueInst)
+            print('Instructor IDs: \n\n')
+            self.numpy_array_metadata(arr=gaf.uniqueInst)
+            print('\n\n')
         elif (self.unique_selection == 'Courses'):
-            print(gaf.uniqueCrs)
+            print('Courses: \n\n') 
+            self.numpy_array_metadata(arr=gaf.uniqueCrs)
+            print('\n\n')
         elif (self.unique_selection == 'UniqueCourseID'):
-            print(gaf.uniqueCRSID)
+            print('UniqueCourseID: \n\n')
+            self.numpy_array_metadata(arr=gaf.uniqueCRSID)
+            print('\n\n')
         elif (self.unique_selection == 'Student IDs'):
-            print(gaf.uniqueStud)
+            print('Student IDs: \n\n')
+            self.numpy_array_metadata(arr=gaf.uniqueStud)
+            print('\n\n')
         elif (self.unique_selection == 'All'):
-            print(gaf.uniqueDept, gaf.uniqueMjr, gaf.uniqueInst, gaf.uniqueCrs, gaf.uniqueCRSID, gaf.uniqueStud)            
+            for name, array in [("Departments", gaf.uniqueDept), ("Majors", gaf.uniqueMjr), ("Instructor ID" , gaf.uniqueInst), ("Courses", gaf.uniqueCrs), ("Course IDs", gaf.uniqueCRSID), ("Student IDs", gaf.uniqueStud)]:
+                print(f'{name}:')
+                self.numpy_array_metadata(arr=array)
+                print('\n\n')
+        elif (self.unique_selection == 'Export All'):
+            gaf.save_unique_entries(gaf.df, user_directory=self.output_directory)
+            self.hyperlink_filepath()
         else:
             self.logger.warning("Invalid unique selection")
             print("This is not a valid option.")
-            self.reset_gui()
+        self.reset_gui()
         self.logger.debug("Unique analysis completed")
 
     def command_DeptAnalysis(self):
         self.logger.info("Executing Department Analysis command")
         self.run_command_button_toggle(state="disabled")
-        self.threshold_popup(which='enrollment')
+        self.threshold_popup(which='enrollment', flags=[False,False,False])
         self.confirm_threshold_choice(self.run_department_analysis)   
         self.logger.debug("Department Analysis command setup completed")
 
@@ -1052,14 +1104,14 @@ class GradingAnalysisTool:
     def command_InstAnalysis(self):
         self.logger.info("Executing Instructor Analysis command")
         self.run_command_button_toggle(state="disabled")
-        self.threshold_popup(which='sections_enrollment')
+        self.threshold_popup(which='sections_enrollment', flags=[True,True,False])
         self.confirm_threshold_choice(self.run_instructor_analysis)
         self.logger.debug("Instructor Analysis command setup completed")
 
     def run_instructor_analysis(self):
         self.logger.info("Running instructor analysis")
-        gaf.InstGPATrunc(gaf.df, self.output_directory, self.min_sections, self.max_sections, csv=self.csv_checkbox.get_selected_analyses().get("CSV File"))
-        gaf.InstEnrollTrunc(gaf.df, self.output_directory, self.min_enrollment, self.max_enrollment, csv=self.csv_checkbox.get_selected_analyses().get("CSV File"))
+        gaf.InstGPATrunc(gaf.df, self.output_directory, self.min_sections, self.max_sections, csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"))
+        gaf.InstEnrollTrunc(gaf.df, self.output_directory, self.min_enrollment, self.max_enrollment, csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"))
         self.hyperlink_filepath()
         self.reset_gui()
         self.logger.debug("Instructor analysis completed")
@@ -1067,24 +1119,35 @@ class GradingAnalysisTool:
         
     def command_MjrAnalysis(self):
         self.run_command_button_toggle(state = "disabled")
-        self.threshold_popup(which='sections_enrollment')
+        self.threshold_popup(which='sections_enrollment', flags=[True,True,False])
         self.confirm_threshold_choice(self.run_major_analysis)
 
     def run_major_analysis(self):
-        gaf.MjrGPATrunc(gaf.df, self.output_directory, self.min_enrollment, self.max_enrollment,csv=self.csv_checkbox.get_selected_analyses().get("CSV File"))
-        gaf.MjrEnroll(gaf.df, self.output_directory, self.min_enrollment, self.max_enrollment, csv=self.csv_checkbox.get_selected_analyses().get("CSV File"))
+        gaf.MjrGPATrunc(gaf.df, self.output_directory, self.min_enrollment, self.max_enrollment,csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"))
+        gaf.MjrEnroll(gaf.df, self.output_directory, self.min_enrollment, self.max_enrollment, csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"))
         self.hyperlink_filepath()
         self.reset_gui()
 
 
     def command_CrsAnalysis(self):
         self.run_command_button_toggle(state = "disabled")
-        self.threshold_popup(which='sections_enrollment')
+        self.threshold_popup(which='sections_enrollment', analysis=True, flags=[True,True,False])
         self.confirm_threshold_choice(self.run_crs_analysis)
 
 
     def run_crs_analysis(self):
-        gaf.CourseGPA(gaf.df, self.output_directory, self.min_enrollment, self.max_enrollment, self.min_sections, self.max_sections, csv=self.csv_checkbox.get_selected_analyses().get("CSV File"), analysis=self.get_analysis_checkboxes())
+        gaf.CourseGPA(gaf.df, self.output_directory, self.min_enrollment, self.max_enrollment, self.min_sections, self.max_sections, csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"), useGPA=self.analysis_checkbox.get_dict_of_checkbox().get("GPA Analysis"), useEnrollments=self.analysis_checkbox.get_dict_of_checkbox().get("Enrollment Analysis"))
+        self.hyperlink_filepath()
+        self.reset_gui()
+
+    def command_StudentLevelAnalysis(self):
+        self.run_command_button_toggle(state = "disabled")
+        self.threshold_popup(which='enrollment', analysis=True, flags=[False,False,True])
+        self.confirm_threshold_choice(self.run_student_level_analysis)
+    
+    def run_student_level_analysis(self):
+        gaf.Level_Inflation(gaf.df, user_directory=self.output_directory, min_enrollments=self.min_enrollment, max_enrollments=self.max_enrollment, csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"))
+        gaf.CourseLevelGrade(gaf.df, heatmap=self.analysis_checkbox.get_dict_of_checkbox().get("Heatmap"), user_directory=self.output_directory, min_enrollments=self.min_enrollment, max_enrollments=self.max_enrollment, csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"))
         self.hyperlink_filepath()
         self.reset_gui()
       
@@ -1119,13 +1182,16 @@ class GradingAnalysisTool:
         gaf.DeptSize(self.output_directory)
         gaf.DeptEnrollGPA(self.output_directory)
         gaf.DeptStudGPA(self.output_directory, self.min_enrollment, self.max_enrollment)
-        gaf.InstGPATrunc(gaf.df, self.output_directory, self.min_enrollment, self.max_enrollment, csv=self.csv_checkbox.get_selected_analyses().get("CSV File"))
-        gaf.InstEnrollTrunc(gaf.df, self.output_directory, self.min_enrollment, self.max_enrollment, csv=self.csv_checkbox.get_selected_analyses().get("CSV File"))
-        gaf.MjrGPATrunc(gaf.df, self.output_directory, self.min_enrollment, self.max_enrollment, csv=self.csv_checkbox.get_selected_analyses().get("CSV File"))
-        gaf.MjrEnroll(gaf.df, self.output_directory, self.min_enrollment, self.max_enrollment, csv=self.csv_checkbox.get_selected_analyses().get("CSV File"))
-        gaf.CourseGPA(gaf.df, self.output_directory, self.min_enrollment, self.max_enrollment, self.csv_checkbox.get_selected_analyses().get("CSV File"), analysis=self.get_analysis_checkboxes())
+        gaf.InstGPATrunc(gaf.df, self.output_directory, self.min_enrollment, self.max_enrollment, csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"))
+        gaf.InstEnrollTrunc(gaf.df, self.output_directory, self.min_enrollment, self.max_enrollment, csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"))
+        gaf.MjrGPATrunc(gaf.df, self.output_directory, self.min_enrollment, self.max_enrollment, csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"))
+        gaf.MjrEnroll(gaf.df, self.output_directory, self.min_enrollment, self.max_enrollment, csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"))
+        gaf.CourseGPA(gaf.df, self.output_directory, self.min_enrollment, self.max_enrollment, self.min_sections, self.max_sections, csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"), useGPA=self.analysis_checkbox.get_dict_of_checkbox().get("GPA Analysis"), useEnrollments=self.analysis_checkbox.get_dict_of_checkbox().get("Enrollment Analysis"))
+        gaf.Level_Inflation(gaf.df, user_directory=self.output_directory, min_enrollments=self.min_enrollment, max_enrollments=self.max_enrollment, csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"))
+        gaf.CourseLevelGrade(gaf.df, heatmap=self.analysis_checkbox.get_dict_of_checkbox().get("Heatmap"), user_directory=self.output_directory, min_enrollments=self.min_enrollment, max_enrollments=self.max_enrollment, csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"))
 
         self.hyperlink_filepath()
+        self.reset_gui()
         self.logger.debug("All commands executed")
 
 

@@ -8,8 +8,9 @@ import csv
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+from matplotlib.backends.backend_pdf import PdfPages
+import plotly.express as px
 import csv
-import seaborn as sns
 
 
 
@@ -20,7 +21,6 @@ plt.rcParams.update({'font.size': 14})
 
 # save the data file as df
 df = pd.read_csv('filteredData.csv')
-deptFile = pd.read_csv('deptTable.csv')
 
 # get useful list of all unique departments, majors, instructors, courses, UniqueCourseID, and students
 uniqueDept = df['Department'].unique()
@@ -33,7 +33,10 @@ uniqueStud = df['SID'].unique()
 
 #All this is done to make a csv file with all the unique entries appearing in the given dataset. It is
 #not used and is only there for refrence purposes.
-def save_unique_entries(df):
+
+
+
+def save_unique_entries(df, user_directory):
     uniqueDept = df['Department'].unique()
     uniqueMjr = df['Major'].unique()
     uniqueInst = df['FacultyID'].unique()
@@ -41,7 +44,10 @@ def save_unique_entries(df):
     uniqueCRSID = df['UniqueCourseID'].unique()
     uniqueStud = df['SID'].unique()
 
-    with open('.unique_entries.csv', 'w', newline='') as f:
+    save_path = os.path.join(user_directory, 'unique_entries.csv')
+
+
+    with open(save_path, 'w', newline='') as f:
         writer = csv.writer(f)
 
         # Write headers
@@ -64,7 +70,7 @@ def save_unique_entries(df):
             ]
             writer.writerow(row)
 
-save_unique_entries(df)
+        print("\n\nFile Created:", f" {save_path}\n\n")
 
 
 def drop_values_by_threshold(df, column, min_threshold=None, max_threshold=None):
@@ -344,8 +350,6 @@ def DeptStudGPA(user_directory, min_enrollments = None, max_enrollments = None):
     dt.yaxis.grid()
     save_path = os.path.join(user_directory, 'Figure3.2.jpg')
     print("\n\nFile Created:", f" {save_path}\n\n")
-
-    print("\n\nFile Created:", f" {save_path}\n\n")
     plt.savefig(save_path, bbox_inches='tight')
 
 
@@ -458,16 +462,14 @@ def MjrEnroll(df, user_directory, min_enrollments = None, max_enrollments = None
     plt.savefig(save_path, bbox_inches='tight')
 
 
-def CourseGPA(df, user_directory, min_enrollments=None, max_enrollments=None, min_sections=None, max_sections=None, csv=False, analysis=None):
+def CourseGPA(df, user_directory, min_enrollments=None, max_enrollments=None, min_sections=None, max_sections=None, csv=False, useGPA=False, useEnrollments=False):
     crsTable = pd.read_csv('courseTable.csv')
     crsTable.sort_values('GPA W', inplace=True)
 
-    sns.set(style="whitegrid")  # Set the seaborn style
 
     def plot_and_save(df, x, y, color, ylabel, title, filename, ax=None):
         if ax is None:
             fig, ax = plt.subplots(figsize=(15, 6))
-        sns.barplot(data=df, x=x, y=y, ax=ax, palette=color)
         ax.set_title(title, fontsize=16)
         ax.set_xlabel('Courses', fontsize=12)
         ax.set_ylabel(ylabel, fontsize=12)
@@ -477,23 +479,166 @@ def CourseGPA(df, user_directory, min_enrollments=None, max_enrollments=None, mi
         plt.savefig(save_path, bbox_inches='tight')
         print("\n\nFile Created:", f" {save_path}\n\n")
 
-    if analysis == 'gpa':
+    if useGPA and not useEnrollments:
         crsTable = drop_values_by_threshold(crsTable, 'Sections', min_sections, max_sections)
         plot_and_save(crsTable, 'Course', 'GPA W', 'viridis', 'GPA', 'GPA Analysis per Course', 'gpaCourseBarTrunc.jpg')
 
-    if analysis == 'enrollment':
+    if useEnrollments and not useGPA:
         crsTable = drop_values_by_threshold(crsTable, 'Enrollments', min_enrollments, max_enrollments)
         plot_and_save(crsTable, 'Course', 'Students', 'rocket', 'Number of Students', 'Enrollment Analysis per Course', 'EnrollCourseBarTrunc.jpg')
-
-    if analysis == 'both':
-        crsTable = drop_values_by_threshold(crsTable, 'Sections', min_sections, max_sections)
+    
+    if useEnrollments and useGPA:
         crsTable = drop_values_by_threshold(crsTable, 'Enrollments', min_enrollments, max_enrollments)
-        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(20, 12))
-        plot_and_save(crsTable, 'Course', 'GPA W', 'viridis', 'GPA', 'Combined GPA and Enrollment Analysis (GPA)', 'CourseGPAEnrollTrunc.jpg', ax=ax1)
-        plot_and_save(crsTable, 'Course', 'Students', 'rocket', 'Course Enrollments', '', 'CourseGPAEnrollTrunc.jpg', ax=ax2)
-        plt.savefig(os.path.join(user_directory, 'CourseGPAEnrollTrunc.jpg'), bbox_inches='tight')
+        crsTable = drop_values_by_threshold(crsTable, 'Sections', min_sections, max_sections)
+        plot_and_save(crsTable, 'Course', 'GPA W', 'viridis', 'GPA', 'GPA Analysis per Course', 'gpaCourseBarTrunc.jpg')
 
     if csv:
         save_path = os.path.join(user_directory, 'crsTableTrunc.csv')
         crsTable.to_csv(save_path, encoding='utf-8-sig')
+        print("\n\nFile Created:", f" {save_path}\n\n")
+
+
+
+## Should we use enrollment threshold for class size?
+
+
+def Level_Inflation(df, user_directory, show_plot = False, csv = False, min_enrollments=None, max_enrollments=None):
+
+    df = drop_values_by_threshold(df, 'ClassSize', min_enrollments, max_enrollments)
+
+    df['CombinedStudentLevel'] = df['StudentLevel'].apply(lambda x: 'Freshman' if x in ['Continuing Freshman', 'First-Time Freshman'] else x)
+    gpa = df.groupby('CombinedStudentLevel')['FinNumericGrade'].mean().reset_index()
+    gpa.rename(columns={'FinNumericGrade':'Average GPA'}, inplace=True)
+    gpa.rename(columns={'CombinedStudentLevel':'Student Level'}, inplace=True)
+
+    ## Custom Sort Student Levels
+    level = ['Unclassified', 'Freshman', 'Sophomores', 'Juniors', 'Seniors', 'Graduate Students']
+    gpa['Student Level'] = pd.Categorical(gpa['Student Level'], categories=level)
+    gpa.sort_values(by = 'Student Level', inplace=True)
+    gpa.reset_index(drop=True, inplace=True)
+
+    print(gpa)
+    print("")
+    
+    gpa.plot(x='Student Level', y = 'Average GPA', kind='line', marker='o', color='b', linestyle='-')
+    plt.xlabel('Student Level')
+    plt.ylabel('Average GPA')
+    plt.title('Level Trends')
+    plt.grid(True)
+
+    if show_plot:
+        fig = px.line(gpa, x='Student Level', y='Average GPA', markers=True, title='GPA vs Class Level')
+        fig.update_traces(textposition='top center')
+        fig.update_layout(hovermode='closest')
+
+        # Show the interactive plot
+        fig.show()
+
+    # Saving the plot as a PDF using matplotlib
+    gpa.plot(x='Student Level', y='Average GPA', kind='line', marker='o', color='b', linestyle='-')
+    plt.xlabel('Student Level')
+    plt.ylabel('Average GPA')
+    plt.title('Level Trends')
+    plt.grid(True)
+    
+    pdf_filename = 'output.pdf'
+    save_path = os.path.join(user_directory, pdf_filename)
+
+    with PdfPages(save_path) as pdf:
+        plt.xticks(rotation = 45)
+        plt.tight_layout()
+        pdf.savefig()
+        plt.close()
+
+    print("\n\nFile Created:", f" {save_path}\n\n")
+    
+    if csv:
+        save_path = os.path.join(user_directory, 'lvlInflation.csv')
+        gpa.to_csv(save_path, encoding='utf-8-sig')
+        print("\n\nFile Created:", f" {save_path}\n\n")
+
+
+def sort_values(value):
+    if value >= 1000 and value <2000:
+        return '1000'
+    elif value >= 2000 and value < 3000:
+        return '2000'
+    elif value >= 3000 and value < 4000:
+        return '3000'
+    elif value >= 4000:
+        return '4000'
+    elif value <= 1000:
+        return "Beginner"
+
+
+def CourseLevelGrade(df, user_directory, heatmap = False, min_enrollments = None, max_enrollments = None ,csv = False):
+
+    df = drop_values_by_threshold(df, 'ClassSize', min_enrollments, max_enrollments)
+
+    df['CombinedStudentLevel'] = df['StudentLevel'].apply(lambda x: 'Freshman' if x in ['Continuing Freshman', 'First-Time Freshman'] else x)
+
+    df['Course Level'] = df ['CourseNum'].apply(sort_values)
+    
+    gpa = df[~(df['Course Level'] == 'Beginner')].groupby(['CombinedStudentLevel', 'Course Level'])['FinNumericGrade'].mean().reset_index()
+    gpa.rename(columns={'FinNumericGrade':'Average GPA'}, inplace=True)
+    gpa.rename(columns={'CombinedStudentLevel':'Student Level'}, inplace=True)
+    
+    gpa['Average GPA'] = gpa['Average GPA'].round(3)
+    
+    ## Custom Sort Student Levels
+    level = ['Unclassified', 'Freshman', 'Sophomores', 'Juniors', 'Seniors', 'Graduate Students']
+    gpa['Student Level'] = pd.Categorical(gpa['Student Level'], categories=level)
+    gpa.sort_values(by =['Student Level', 'Course Level'], inplace=True)
+    gpa.reset_index(drop=True, inplace=True)
+    
+    print(gpa)
+    print("")
+    
+    pivot = np.round(pd.pivot_table(gpa, index= 'Student Level', columns='Course Level', values='Average GPA', aggfunc='mean', margins=True, margins_name='Total'),3)    
+
+    if heatmap:
+        heatmap = pivot
+        heatmap = heatmap.drop('Total', axis=0)
+        heatmap = heatmap.drop('Total', axis=1)
+
+
+        data_for_heatmap = heatmap.to_numpy()
+
+        fig, ax = plt.subplots(figsize=(10, 8))
+
+        cax = ax.imshow(data_for_heatmap, cmap='coolwarm', interpolation='nearest')
+        fig.colorbar(cax)
+        ax.set_xticks(np.arange(len(heatmap.columns)))
+        ax.set_yticks(np.arange(len(heatmap.index)))
+        ax.set_xticklabels(heatmap.columns)
+        ax.set_yticklabels(heatmap.index)
+        plt.xticks(rotation=45)
+        ax.set_xlabel('Course Level')
+        ax.set_ylabel('Student Level')
+        ax.set_title('GPA Heatmap: Student Level vs Course Level')
+
+        plt.savefig(f'{user_directory}/heatmap.pdf', bbox_inches='tight')
+
+        save_path = os.path.join(user_directory, 'heatmap.pdf')
+        print("\n\nFile Created:", f" {save_path}\n\n")
+        
+
+    pdf_filename = 'pivot.pdf'
+    save_path = os.path.join(user_directory, pdf_filename)
+
+
+    with PdfPages(save_path) as pdf:
+        fig, ax = plt.subplots(figsize=(8,6))
+        ax.axis('off')
+        ax.table(cellText=pivot.values, rowLabels=pivot.index, colLabels=pivot.columns, loc='center')
+        plt.title('Pivot Table')
+        pdf.savefig(fig, bbox_inches='tight')
+        plt.close()
+
+    save_path = os.path.join(user_directory, pdf_filename)
+    print("\n\nFile Created:", f" {save_path}\n\n")
+
+    if csv:
+        save_path = os.path.join(user_directory, 'courseLevelGrade.csv')
+        gpa.to_csv(save_path, encoding='utf-8-sig')
         print("\n\nFile Created:", f" {save_path}\n\n")
