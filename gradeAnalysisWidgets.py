@@ -14,17 +14,15 @@ class Logger(logging.Logger):
 
         stream_handler = logging.StreamHandler()
         formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s', 
-                                      datefmt='%m/%d/%Y, [%H:%M:%S]')
+                                            datefmt='%m/%d/%Y, [%H:%M:%S]')
         stream_handler.setFormatter(formatter)
         self.addHandler(stream_handler)
 
-        # Check if the file handler has been created already
         if not Logger._file_handler_created:
-            # FileHandler for file output, set to 'w' mode to overwrite file on first creation
             file_handler = logging.FileHandler(log_file, mode='w')
             Logger._file_handler_created = True
         else:
-            # Subsequent logger instances should append to the file
+            #Subsequent logger instances should append to the file
             file_handler = logging.FileHandler(log_file, mode='a')
 
         file_handler.setFormatter(formatter)
@@ -155,6 +153,9 @@ class ThresholdWidget:
         self.logger.debug("Threshold widget created and configured")
 
     def get_entry_value(self):
+        if self.entry is None or self.label is None:
+            self.logger.error("Entry is not initialized")
+            return
         entry_value = self.entry.get()
         if entry_value != "":
             self.logger.debug(f"Retrieving entry value: {entry_value}")
@@ -193,13 +194,17 @@ class CheckboxWidget:
         self.checkboxes[text] = (checkbox, checkbox_state)
         self.logger.debug(f"Checkbox '{text}' created")
 
-    def create_multiple_checkboxes(self, options, state, where, row, column):
+    def create_multiple_checkboxes(self, options, flags, state, where, row, column):
         self.logger.info("Creating multiple checkboxes")
-        for idx, (text, help_text) in enumerate(options.items(), start=row):
-            self.create_checkbox(text, help_text, state, where, idx, column)
+        current_row = row
+        for (text, help_text), flag in zip(options.items(), flags):
+            if flag:
+                self.create_checkbox(text, help_text, state, where, current_row, column)
+                current_row += 1
         self.logger.debug("Multiple checkboxes created")
 
-    def get_selected_analyses(self):
+
+    def get_dict_of_checkbox(self):
         self.logger.debug("Retrieving selected checkboxes")
         selected = {text: state.get() for text, (_, state) in self.checkboxes.items()}
         self.logger.info(f"Selected checkboxes: {selected}")
