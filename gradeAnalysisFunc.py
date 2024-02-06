@@ -9,8 +9,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 from matplotlib.backends.backend_pdf import PdfPages
-import plotly.express as px
 import csv
+import gradeAnalysisWidgets as gaw
+import dictionary as dic
 
 
 
@@ -29,6 +30,13 @@ uniqueInst = df['FacultyID'].unique()
 uniqueCrs = df['CourseTitle'].unique()
 uniqueCRSID = df['UniqueCourseID'].unique()
 uniqueStud = df['SID'].unique()
+
+# returns filtered dataframe. Each condition should be passed as column name = LIST of targets
+    # e.g. "filter(df, crsTitle = ['PHYSICS I LAB'], facultyID = ['F18125', 'F97128'])" returns df with 84 rows
+def filter(df, **kwargs):
+    for key in kwargs.keys():
+        df = df[(df[key]).isin(kwargs.get(key))]
+    return df
 
 
 #All this is done to make a csv file with all the unique entries appearing in the given dataset. It is
@@ -259,8 +267,11 @@ def coloring(dt):
         barsColor.append(color)
     
     return barsColor
-    
 
+def plotter(title, window_width=800, window_height=600, df=pd.DataFrame, x_label="", y_label="", plot_type='line', color='blue', x_plot="", y_plot=""):
+    plotter = gaw.tkMatplot(title, window_width, window_height)
+    object_return = plotter.plot(df, x_label, y_label, plot_type, color, x_plot, y_plot)
+    return object_return
 
 def DeptGPA(user_directory, min_enrollments = None, max_enrollments = None):   
     DeptTable = pd.read_csv('deptTable.csv') 
@@ -414,88 +425,155 @@ def InstEnrollTrunc(df, user_directory, min_enrollments = None, max_enrollments 
 
 
 
-# gpa vs major size (number of enrollments) scatter plot for majors with > 10,000 enrollments
-def MjrGPATrunc(df, user_directory, min_enrollments = None, max_enrollments = None, csv = False):
+def MajorAnalysis(df, user_directory, min_enrollments = None, max_enrollments = None, min_sections = None, max_sections = None, csv = False):
     mjrTable = pd.read_csv('majorTable.csv')
-    mjrTable.sort_values('Enrollments', inplace=True)
-    
+
     mjrTable = drop_values_by_threshold(mjrTable, 'Enrollments', min_enrollments, max_enrollments)
+    mjrTable = drop_values_by_threshold(mjrTable, 'Sections', min_sections, max_sections)
+
+    if dic.major_analysis_options['Major vs GPA']:
+        plotter = gaw.tkMatplot(title='Major vs GPA', window_width=800, window_height=600, x_label='Major', y_label='GPA', plot_type='bar', color='teal', x_plot='Major', y_plot='GPA W', df=mjrTable)
+        plotter.plot()
+    
+    if dic.major_analysis_options['Major vs Enrollment']:
+        plotter = gaw.tkMatplot(title='Major vs Enrollment', window_width=800, window_height=600, x_label='Major', y_label='Enrollment', plot_type='scatter', color='teal', x_plot='Major', y_plot='Enrollments', df=mjrTable)
+        plotter.plot()
+    
+    if dic.major_analysis_options['Courses vs GPA']:
+        plotter = gaw.tkMatplot(title='Courses vs GPA', window_width=800, window_height=600, x_label='Courses', y_label='GPA', plot_type='bar', color='teal', x_plot='Courses', y_plot='GPA W', df=mjrTable)
+        plotter.plot()
+
+    if dic.major_analysis_options['Sections vs GPA']:
+        plotter = gaw.tkMatplot(title='Sections vs GPA', window_width=800, window_height=600, x_label='Sections', y_label='GPA', plot_type='scatter', color='teal', x_plot='Sections', y_plot='GPA W', df=mjrTable)
+        plotter.plot()
 
     if csv:
-        save_path = os.path.join(user_directory, 'mjrvsmjrsize.csv')
+        save_path = os.path.join(user_directory, 'majorTable.csv')
         print("\n\nFile Created:", f" {save_path}\n\n")
         mjrTable.to_csv(save_path, encoding='utf-8-sig')
 
+        
+    # input: dataframe, name of course as string
+    # returns list of each section: provides UniqueCourseID(newUniqueCourseID that is unique to section), Instructor(facultyID), average GPA, SD, class size (of section)
+    # e.g. try: gpa_by_section(final_df, "English 2000")
+def gpa_by_section(df, course_name):
+    print(course_name) #this is correct
+    sections = list(np.unique((filter(df, CourseTitle = [course_name])['UniqueCourseID'])))
+    to_return = pd.DataFrame(columns =['UniqueCourseID', 'Instructor', 'GPA', 'SD', 'Class Size'])
+    for i in sections:
+        filtered_data = filter(df, CourseTitle = [course_name], UniqueCourseID = [i])
+        to_return.loc[len(to_return)] = [i, (filtered_data.mode()['FacultyID'][0]), np.mean(((filtered_data)['FinNumericGrade']).to_numpy()), np.std(((filtered_data)['FinNumericGrade']).to_numpy()), len(filtered_data.index)]
+    to_return['total'] = to_return['GPA']*to_return['Class Size']
+    to_return['UniqueCourseID'] = to_return['UniqueCourseID'].astype(str)
+    return to_return
 
-    mjrTable.reset_index()
-    mj = mjrTable.plot.scatter(
-        x='Enrollments', y='GPA W', figsize=(10, 5), color='#e08114', s=50)
-    mj.set_xlabel("Major Enrollments")
-    mj.set_ylabel("Weighted GPA")
-    mj.yaxis.grid()
-    save_path = os.path.join(user_directory, 'MjrAvgScatTrunc.jpg')
-    print("\n\nFile Created:", f" {save_path}\n\n")
+def section_analysis(df, user_directory, course_name, csv = False,  min_enrollments = None, max_enrollments = None, min_sections = None, max_sections = None):
+    sectionTable = gpa_by_section(df, course_name)
+    sectionTable = drop_values_by_threshold(sectionTable, 'Class Size', min_enrollments, max_enrollments)
+    sectionTable = drop_values_by_threshold(sectionTable, 'semyear', min_sections, max_sections)
 
-    plt.savefig(save_path, bbox_inches='tight')
-
-# major vs enrollments bar chart, for majors with > 10,000 enrollments
-def MjrEnroll(df, user_directory, min_enrollments = None, max_enrollments = None, csv = False):
-    mjrTable = pd.read_csv('majorTable.csv')
-    mjrTable.sort_values('Enrollments', inplace=True)
+    if dic.section_analysis_options['Section vs GPA']:
+        plotter = gaw.tkMatplot(title='Section vs GPA', window_width=800, window_height=600, x_label='Section', y_label='GPA', plot_type='bar', color='teal', x_plot='UniqueCourseID', y_plot='GPA', df=sectionTable)
+        plotter.plot()
     
-    mjrTable = drop_values_by_threshold(mjrTable, 'Enrollments', min_enrollments, max_enrollments)
-
+    if dic.section_analysis_options['Section vs Enrollment']:
+        plotter = gaw.tkMatplot(title='Section vs Enrollment', window_width=800, window_height=600, x_label='Section', y_label='Enrollment', plot_type='scatter', color='teal', x_plot='UniqueCourseID', y_plot='Class Size', df=sectionTable)
+        plotter.plot()
+    
     if csv:
-        save_path = os.path.join(user_directory, 'mjrvsenroll.csv')
+        save_path = os.path.join(user_directory, 'sectionTable.csv')
         print("\n\nFile Created:", f" {save_path}\n\n")
-        mjrTable.to_csv(save_path, encoding='utf-8-sig')
+        sectionTable.to_csv(save_path, encoding='utf-8-sig')
 
-    mjrTable.reset_index()
-    mj = mjrTable.plot.bar(x='Major', y='Enrollments', figsize=(
-        15, 5), color='#f5a142', legend=False)
-    mj.set_xlabel("Majors")
-    mj.set_ylabel("Enrollments")
-    mj.yaxis.grid()
-    save_path = os.path.join(user_directory, 'MjrEnrolBarTrunc.jpg')
-    print("\n\nFile Created:", f" {save_path}\n\n")
-
-    plt.savefig(save_path, bbox_inches='tight')
+    for key in dic.section_analysis_options.keys():
+        dic.section_analysis_options[key] = False
 
 
-def CourseGPA(df, user_directory, min_enrollments=None, max_enrollments=None, min_sections=None, max_sections=None, csv=False, useGPA=False, useEnrollments=False):
+# # gpa vs major size (number of enrollments) scatter plot for majors with > 10,000 enrollments
+# def MjrGPATrunc(df, user_directory, min_enrollments = None, max_enrollments = None, csv = False):
+#     mjrTable = pd.read_csv('majorTable.csv')
+#     mjrTable.sort_values('Enrollments', inplace=True)
+    
+#     mjrTable = drop_values_by_threshold(mjrTable, 'Enrollments', min_enrollments, max_enrollments)
+
+#     if csv:
+#         save_path = os.path.join(user_directory, 'mjrvsmjrsize.csv')
+#         print("\n\nFile Created:", f" {save_path}\n\n")
+#         mjrTable.to_csv(save_path, encoding='utf-8-sig')
+
+
+#     mjrTable.reset_index()
+#     mj = mjrTable.plot.scatter(
+#         x='Enrollments', y='GPA W', figsize=(10, 5), color='#e08114', s=50)
+#     mj.set_xlabel("Major Enrollments")
+#     mj.set_ylabel("Weighted GPA")
+#     mj.yaxis.grid()
+#     save_path = os.path.join(user_directory, 'MjrAvgScatTrunc.jpg')
+#     print("\n\nFile Created:", f" {save_path}\n\n")
+
+#     plt.savefig(save_path, bbox_inches='tight')
+
+# # major vs enrollments bar chart, for majors with > 10,000 enrollments
+# def MjrEnroll(df, user_directory, min_enrollments = None, max_enrollments = None, csv = False):
+#     mjrTable = pd.read_csv('majorTable.csv')
+#     mjrTable.sort_values('Enrollments', inplace=True)
+    
+#     mjrTable = drop_values_by_threshold(mjrTable, 'Enrollments', min_enrollments, max_enrollments)
+
+#     if csv:
+#         save_path = os.path.join(user_directory, 'mjrvsenroll.csv')
+#         print("\n\nFile Created:", f" {save_path}\n\n")
+#         mjrTable.to_csv(save_path, encoding='utf-8-sig')
+
+#     mjrTable.reset_index()
+#     mj = mjrTable.plot.bar(x='Major', y='Enrollments', figsize=(
+#         15, 5), color='#f5a142', legend=False)
+#     mj.set_xlabel("Majors")
+#     mj.set_ylabel("Enrollments")
+#     mj.yaxis.grid()
+
+    
+#     save_path = os.path.join(user_directory, 'MjrEnrolBarTrunc.jpg')
+#     print("\n\nFile Created:", f" {save_path}\n\n")
+
+#     plt.savefig(save_path, bbox_inches='tight')
+
+
+def CourseGPA(df, user_directory, min_enrollments=None, max_enrollments=None, min_sections=None, max_sections=None, csv=False):
     crsTable = pd.read_csv('courseTable.csv')
     crsTable.sort_values('GPA W', inplace=True)
+    crsTable = drop_values_by_threshold(crsTable, 'Enrollments', min_enrollments, max_enrollments)
+    crsTable = drop_values_by_threshold(crsTable, 'Sections', min_sections, max_sections)
 
+    if dic.course_analysis_options['GPA vs Course']:
+        plotter = gaw.tkMatplot(title='GPA vs Course', window_width=800, window_height=600, x_label='Course', y_label='GPA', plot_type='bar', color='teal', x_plot='Course', y_plot='GPA W', df=crsTable)
+        plotter.plot()
 
-    def plot_and_save(df, x, y, color, ylabel, title, filename, ax=None):
-        if ax is None:
-            fig, ax = plt.subplots(figsize=(15, 6))
-        ax.set_title(title, fontsize=16)
-        ax.set_xlabel('Courses', fontsize=12)
-        ax.set_ylabel(ylabel, fontsize=12)
-        plt.xticks(rotation=45)
-        plt.tight_layout()
-        save_path = os.path.join(user_directory, filename)
-        plt.savefig(save_path, bbox_inches='tight')
-        print("\n\nFile Created:", f" {save_path}\n\n")
-
-    if useGPA and not useEnrollments:
-        crsTable = drop_values_by_threshold(crsTable, 'Sections', min_sections, max_sections)
-        plot_and_save(crsTable, 'Course', 'GPA W', 'viridis', 'GPA', 'GPA Analysis per Course', 'gpaCourseBarTrunc.jpg')
-
-    if useEnrollments and not useGPA:
-        crsTable = drop_values_by_threshold(crsTable, 'Enrollments', min_enrollments, max_enrollments)
-        plot_and_save(crsTable, 'Course', 'Students', 'rocket', 'Number of Students', 'Enrollment Analysis per Course', 'EnrollCourseBarTrunc.jpg')
+    elif dic.course_analysis_options['Enrollment vs Course']:
+        plotter = gaw.tkMatplot(title='Enrollments vs Course', window_width=800, window_height=600, x_label='Course', y_label='Enrollments', plot_type='scatter', color='teal', x_plot='Course', y_plot='Enrollments', df=crsTable)
+        plotter.plot()
     
-    if useEnrollments and useGPA:
-        crsTable = drop_values_by_threshold(crsTable, 'Enrollments', min_enrollments, max_enrollments)
-        crsTable = drop_values_by_threshold(crsTable, 'Sections', min_sections, max_sections)
-        plot_and_save(crsTable, 'Course', 'GPA W', 'viridis', 'GPA', 'GPA Analysis per Course', 'gpaCourseBarTrunc.jpg')
+    elif dic.course_analysis_options['GPA vs Section']:
+        plotter = gaw.tkMatplot(title='GPA vs Section', window_width=800, window_height=600, x_label='GPA W', y_label='Sections', plot_type='scatter', color='teal', x_plot='GPA W', y_plot='Sections', df=crsTable)
+        plotter.plot()
+
+    elif dic.course_analysis_options['Enrollments vs. Department']:
+        department_enrollments = crsTable.groupby('Department')['Enrollments'].sum().reset_index()
+        plotter = gaw.tkMatplot(title='Enrollments vs. Department', window_width=800, window_height=600, x_label='Department', y_label='Enrollments', plot_type='bar', color='teal', x_plot='Department', y_plot='Enrollments', df=department_enrollments)
+        plotter.plot()
+    
+    elif dic.course_analysis_options['GPA vs. Department']:
+        department_gpa = crsTable.groupby('Department')['GPA W'].mean().reset_index()
+        plotter = gaw.tkMatplot(title='GPA vs. Department', window_width=800, window_height=600, x_label='Department', y_label='GPA', plot_type='bar', color='teal', x_plot='Department', y_plot='GPA W', df=department_gpa)
+        plotter.plot()
 
     if csv:
         save_path = os.path.join(user_directory, 'crsTableTrunc.csv')
         crsTable.to_csv(save_path, encoding='utf-8-sig')
         print("\n\nFile Created:", f" {save_path}\n\n")
+
+    for key in dic.course_analysis_options.keys():
+        dic.course_analysis_options[key] = False
 
 
 
@@ -520,37 +598,8 @@ def Level_Inflation(df, user_directory, show_plot = False, csv = False, min_enro
     print(gpa)
     print("")
     
-    gpa.plot(x='Student Level', y = 'Average GPA', kind='line', marker='o', color='b', linestyle='-')
-    plt.xlabel('Student Level')
-    plt.ylabel('Average GPA')
-    plt.title('Level Trends')
-    plt.grid(True)
-
-    if show_plot:
-        fig = px.line(gpa, x='Student Level', y='Average GPA', markers=True, title='GPA vs Class Level')
-        fig.update_traces(textposition='top center')
-        fig.update_layout(hovermode='closest')
-
-        # Show the interactive plot
-        fig.show()
-
-    # Saving the plot as a PDF using matplotlib
-    gpa.plot(x='Student Level', y='Average GPA', kind='line', marker='o', color='b', linestyle='-')
-    plt.xlabel('Student Level')
-    plt.ylabel('Average GPA')
-    plt.title('Level Trends')
-    plt.grid(True)
-    
-    pdf_filename = 'output.pdf'
-    save_path = os.path.join(user_directory, pdf_filename)
-
-    with PdfPages(save_path) as pdf:
-        plt.xticks(rotation = 45)
-        plt.tight_layout()
-        pdf.savefig()
-        plt.close()
-
-    print("\n\nFile Created:", f" {save_path}\n\n")
+    plotter = gaw.tkMatplot(title='Average GPA vs Student Level', window_width=800, window_height=600, x_label='Student Level', y_label='Average GPA', plot_type='bar', color='teal', x_plot='Student Level', y_plot='Average GPA', df=gpa)
+    plotter.plot()
     
     if csv:
         save_path = os.path.join(user_directory, 'lvlInflation.csv')
@@ -591,8 +640,6 @@ def CourseLevelGrade(df, user_directory, heatmap = False, min_enrollments = None
     gpa.sort_values(by =['Student Level', 'Course Level'], inplace=True)
     gpa.reset_index(drop=True, inplace=True)
     
-    print(gpa)
-    print("")
     
     pivot = np.round(pd.pivot_table(gpa, index= 'Student Level', columns='Course Level', values='Average GPA', aggfunc='mean', margins=True, margins_name='Total'),3)    
 
@@ -621,22 +668,7 @@ def CourseLevelGrade(df, user_directory, heatmap = False, min_enrollments = None
 
         save_path = os.path.join(user_directory, 'heatmap.pdf')
         print("\n\nFile Created:", f" {save_path}\n\n")
-        
-
-    pdf_filename = 'pivot.pdf'
-    save_path = os.path.join(user_directory, pdf_filename)
-
-
-    with PdfPages(save_path) as pdf:
-        fig, ax = plt.subplots(figsize=(8,6))
-        ax.axis('off')
-        ax.table(cellText=pivot.values, rowLabels=pivot.index, colLabels=pivot.columns, loc='center')
-        plt.title('Pivot Table')
-        pdf.savefig(fig, bbox_inches='tight')
-        plt.close()
-
-    save_path = os.path.join(user_directory, pdf_filename)
-    print("\n\nFile Created:", f" {save_path}\n\n")
+    
 
     if csv:
         save_path = os.path.join(user_directory, 'courseLevelGrade.csv')

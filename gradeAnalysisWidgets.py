@@ -4,6 +4,12 @@ from functools import partial
 import sys
 import logging
 import platform
+import numpy as np
+from matplotlib.figure import Figure
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationToolbar2Tk)
+from tkinter.filedialog import asksaveasfilename
+import os
 import subprocess
 
 class Logger(logging.Logger):
@@ -179,6 +185,8 @@ class ThresholdWidget:
         widget.bind("<Leave>", lambda event: tooltip.hidetip())
         self.logger.debug("Tooltip events bound successfully")
 
+
+
 class CheckboxWidget:
     def __init__(self):
         self.logger = Logger(__name__)  # Create a logger for this class
@@ -305,7 +313,206 @@ class FileOpener:
         else:
             self.logger.warning("Unsupported platform for file opening")
             return
+        
 
+class tkMatplot:
+    def __init__(self, title="", window_width=800, window_height=600, df=None, x_label=None, y_label=None, plot_type=None, color=None, x_plot=None, y_plot=None):
+        self.root = tk.Tk()
+        self.root.wm_title(title)
+
+        self.logger = Logger(__name__)
+        self.logger.info("Initializing tkMatplot class")
 
         
-    
+        self.root.geometry(f"{window_width}x{window_height}")
+
+        self.fig = Figure(figsize=(5, 4), dpi=100)
+        self.canvas = FigureCanvasTkAgg(self.fig, master=self.root)
+
+        self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+        
+
+        button_quit = tk.Button(master=self.root, text="Quit", command=self.root.destroy)
+        button_quit.pack(side=tk.BOTTOM, fill=tk.X)
+        self.x_label = x_label
+        self.y_label = y_label
+        self.plot_type = plot_type
+        self.color = color
+        self.x_plot = x_plot
+        self.y_plot = y_plot
+        self.df = df
+        self.title = title
+        self.tree = None
+        self.highlighted_point = None
+        self.ax = None
+        self.default_directory = None
+
+    def plot(self):
+        self.logger.info("Creating plot")
+
+        self.set_toolbar()
+
+        plt.style.use('ggplot') 
+        self.ax = self.fig.add_subplot()
+
+        self.ax.ticklabel_format(useOffset=False, style='plain', axis='both')
+
+        
+        if self.plot_type == 'line':
+            self.ax.plot(self.df[self.x_plot], self.df[self.y_plot], color=self.color, marker='o')
+        elif self.plot_type == 'scatter':
+            self.ax.scatter(self.df[self.x_plot], self.df[self.y_plot], color=self.color)
+        elif self.plot_type == 'bar':
+            self.ax.bar(self.df[self.x_plot], self.df[self.y_plot], color=self.color)
+        
+        self.ax.set_xlabel(self.x_label, fontsize=12)
+        self.ax.set_ylabel(self.y_label, fontsize=12)
+        self.ax.set_title(self.title, fontsize=14)
+        self.ax.grid(True)
+        self.ax.tick_params(axis='x', rotation=45)
+        self.ax.legend()  
+
+        self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+
+
+        self.canvas.draw()
+
+        self.add_table()
+
+
+    def set_toolbar(self):
+        toolbar = CustomToolbar(self.canvas, self.root, pack_toolbar=False)
+        toolbar.pack(side=tk.TOP, fill=tk.X)
+        toolbar.update()
+
+    def add_table(self):
+        self.tree = ttk.Treeview(self.root)
+
+        self.tree['columns'] = ("X-Value", "Y-Value")
+        self.tree.column("#0", width=0, stretch=tk.NO)
+        self.tree.column("X-Value", anchor=tk.W, width=80)
+        self.tree.column("Y-Value", anchor=tk.W, width=80)
+
+        self.tree.heading("#0", text="", anchor=tk.W)
+        self.tree.heading("X-Value", text=self.x_label, anchor=tk.W)
+        self.tree.heading("Y-Value", text=self.y_label, anchor=tk.W)
+
+        for i, (x, y) in enumerate(zip(self.df[self.x_plot], self.df[self.y_plot])):
+            self.tree.insert(parent='', index='end', iid=i, text='', values=(x, y))
+
+        self.tree.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
+        self.tree.bind('<<TreeviewSelect>>', self.on_tree_selection_change)
+
+
+    def on_tree_selection_change(self, event):
+        selected_items = self.tree.selection()
+        if selected_items:
+            index = int(selected_items[0])
+            self.highlight_plot_point(index)
+        
+    def highlight_plot_point(self, index):
+        self.clear_highlight()
+
+
+        x, y = self.df[self.x_plot].iloc[index], self.df[self.y_plot].iloc[index]
+
+        self.ax = self.fig.self.axes[0]  # Get the current self.axes
+        self.highlighted_point = self.ax.plot(x, y, marker='o', markersize=10, color='red')  # Customize marker size and color as needed
+
+        self.canvas.draw()
+
+    def clear_highlight(self):
+        try:
+            if self.highlighted_point:
+                self.highlighted_point[0].remove()
+                self.highlighted_point = None
+                self.canvas.draw()
+            self.logger.info("Highlight cleared")
+        except Exception as e:
+            self.logger.error(f"Error clearing highlight: {e}")
+
+class CustomToolbar(NavigationToolbar2Tk):
+    def save_figure(self, *args):
+        # Define the filetypes you want to save as
+        filetypes = self.canvas.get_supported_filetypes_grouped()
+        tk_filetypes = [
+            (name, " ".join(f"*.{ext}" for ext in exts))
+            for name, exts in sorted(filetypes.items())
+        ]
+
+        #initial directory to open in the dialog
+        initialdir = os.path.expanduser(plt.rcParams['savefig.directory'])
+        # Determine the initial file name to suggest in the dialog
+        initialfile = os.path.splitext(self.canvas.get_default_filename())[0]
+
+        # Open a file dialog and ask the user for a filename to save as
+        fname = asksaveasfilename(
+            master=self.canvas.get_tk_widget().master,
+            title='Save the figure',
+            initialdir=initialdir,
+            initialfile=initialfile,
+            defaultextension='png',
+            filetypes=tk_filetypes
+        )
+
+        # Check if a filename was provided
+        if fname:
+            if not any(fname.endswith(f'.{ext}') for exts in filetypes.values() for ext in exts):
+                fname += '.png'
+            try:
+                self.canvas.figure.savefig(fname)
+                print("\n\nFile Created:", f" {fname}\n\n")
+                plt.rcParams['savefig.directory'] = os.path.dirname(fname)
+            except Exception as e:
+                tk.messagebox.showerror("Error saving file", str(e))
+        else:
+            # User cancelled the dialog
+            print("Save figure operation cancelled.")
+class tkDropdown:
+    def __init__(self, master, options_dict, row, column):
+        self.options_dict = options_dict
+        self.dropdown_var = tk.StringVar()
+
+        # Create the dropdown menu
+        self.dropdown = ttk.Combobox(master, textvariable=self.dropdown_var)
+        self.dropdown['values'] = list(self.options_dict.keys())
+        self.dropdown.grid(row=row, column=column)
+        self.dropdown['state'] = 'normal'
+
+
+        # Bind the selection event
+        self.dropdown.bind('<<ComboboxSelected>>', self.update_dict)
+        self.dropdown.bind('<KeyRelease>', self.filter_options)
+
+
+    def update_dict(self, event):
+        for key in self.options_dict:
+            self.options_dict[key] = False
+
+        selected_key = self.dropdown_var.get()
+        if selected_key in self.options_dict:
+            self.options_dict[selected_key] = True
+
+    def get_selected_option(self):
+        for key, value in self.options_dict.items():
+            if value:
+                return key
+        return None
+
+    def filter_options(self, event):
+        typed = self.dropdown_var.get()
+        if typed == '':
+            self.dropdown['values'] = list(self.options_dict.keys())
+        else:
+            filtered = [option for option in list(self.options_dict.keys()) if typed.lower() in option.lower()]
+            self.dropdown['values'] = filtered
+
+        self.dropdown.event_generate('<Down>')
+
+
+
+
+
+
+            
+        

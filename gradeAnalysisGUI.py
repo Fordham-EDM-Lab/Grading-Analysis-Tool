@@ -10,6 +10,7 @@ import os
 import sys
 import subprocess
 import json
+import dictionary as dic
 
 
 class GradingAnalysisTool:
@@ -42,6 +43,8 @@ class GradingAnalysisTool:
 
         self.confirm_button = None
 
+        self.course_name = None
+
         # 
 
         # GUI elements: Listbox variables
@@ -64,6 +67,10 @@ class GradingAnalysisTool:
         self.min_sections = None
         self.max_sections_threshold = None
         self.max_sections = None
+        self.analysis_options = None
+
+        ##Option to pass whatever between methods
+        self.generic_instance = None
 
 
         self.faculty = None
@@ -171,10 +178,19 @@ class GradingAnalysisTool:
             self.max_sections_threshold.generic_thresholds_widget(where=where, state=state, text='Maximum Sections threshold:', row=1, column=2, help='Enter an integer for a threshold')
             self.logger.info("Sections and enrollment thresholds setup completed")
 
+        elif which=='class_size':
+            self.logger.debug("Setting up class size thresholds")
+            self.min_enrollment_threshold = gaw.ThresholdWidget()
+            self.min_enrollment_threshold.generic_thresholds_widget(where=where, state=state, text='Minimum Class Size threshold:', row=0, column=0, help='Enter an integer for a threshold')
+
+            self.max_enrollment_threshold = gaw.ThresholdWidget()
+            self.max_enrollment_threshold.generic_thresholds_widget(where=where, state=state, text='Maximum Class Size threshold:', row=1, column=0, help='Enter an integer for a threshold')
+            self.logger.info("Class size thresholds setup completed")
+
         self.logger.debug("Thresholds widget setup process completed")
 
 
-    def csv_checkbox_widget(self, state='disabled', where=None):
+    def csv_checkbox_widget(self, state='disabled', where=None, row=1, column=4):
         self.logger.info("Starting setup of CSV checkbox widget")
 
         if where is None:
@@ -182,50 +198,45 @@ class GradingAnalysisTool:
             self.logger.debug("Default 'where' parameter used: self.root")
 
         self.csv_checkbox = gaw.CheckboxWidget()
-        self.csv_checkbox.create_checkbox(where=where, text='CSV File', state=state, row=0, column=4, help_text='Check this box to create a csv')
+        self.csv_checkbox.create_checkbox(where=where, text='CSV File', state=state, row=row, column=column, help_text='Check this box to create a csv')
         self.logger.info("CSV checkbox widget created successfully")
 
-    # def heatmap_checkbox_widget(self, state='disabled', where=None, row=0, column=0):
-    #     self.logger.info("Starting setup of Heatmap checkbox widget")
-
-    #     if where is None:
-    #         where = self.root
-    #         self.logger.debug("Default 'where' parameter used: self.root")
-
-    #     self.heatmap_checkbox = gaw.CheckboxWidget()
-    #     self.heatmap_checkbox.create_checkbox(where=where, text='Heatmap', state=state, row=row, column=column, help_text='Check this box to create a heatmap')
-    #     self.logger.info("Heatmap checkbox widget created successfully")
-
-
-    def create_analysis_checkboxes(self, where=None, checkbox_flags=None):
-        self.logger.info("Starting setup of analysis checkboxes")
+    def heatmap_checkbox_widget(self, state='disabled', where=None, row=1, column=4):
+        self.logger.info("Starting setup of heatmap checkbox widget")
 
         if where is None:
             where = self.root
             self.logger.debug("Default 'where' parameter used: self.root")
 
-        # Each checkbox is a dictionary with the key being the name of the checkbox and the value being the help text
-        analysis_options = {
-            'GPA Analysis': 'Check for GPA Analysis, check Enrollment Analysis alongside GPA to take both GPA and Enrollment into consideration',
-            'Enrollment Analysis': 'Check for Enrollment Analysis, check GPA analysis alongside Enrollment Analysis to take both GPA and Enrollment into consideration',
-            'Heatmap': 'Check for heatmap',
-        }
+        self.heatmap_checkbox = gaw.CheckboxWidget()
+        self.heatmap_checkbox.create_checkbox(where=where, text='Heatmap', state=state, row=row, column=column, help_text='Check this box to create a heatmap')
+        self.logger.info("Heatmap checkbox widget created successfully")
+
+
+    #general analysis checkboxes, pick which one you want by passing a list of booleans, like [True, False, True] to use the first and third checkbox
+    #places them top down
+    def create_analysis_dropdown(self, where=None, analysis_options=None, row=0, column=0):
+        self.logger.info("Starting setup of analysis dropdowns")
+
+        if where is None:
+            where = self.root
+            self.logger.debug("Default 'where' parameter used: self.root")
 
         self.logger.debug(f"Analysis options set: {analysis_options}")
 
-        self.analysis_checkbox = gaw.CheckboxWidget()
-        self.analysis_checkbox.create_multiple_checkboxes(options=analysis_options, state='normal', flags = checkbox_flags, where=where, row=0, column=5)
-        self.logger.info("Analysis checkboxes created successfully")
-
+        self.analysis_dropdown = gaw.tkDropdown(where, analysis_options, row, column)
+        self.logger.info("Analysis dropdown created successfully")
         
+    #Creates the appropriate checkboxes and thresholds when used on the root gui itself
+    #right now only used for run all commands but can and should be used for future commands
+    #will add way to control row and column of each widget
     def thresholds_on_root(self, which=None):
         self.logger.info("Setting up thresholds on root")
 
         self.thresholds_widget(state='normal', which=which)
         self.logger.debug("Thresholds widget setup completed")
 
-        self.create_analysis_checkboxes(where=self.root, checkbox_flags=[True,True,True])
-        self.logger.debug("Analysis checkboxes created")
+        self.create_analysis_dropdown(where=self.root, analysis_options=dic.course_analysis_options, row=0, column=6)
 
         self.csv_checkbox_widget(state='normal', where=self.root)
         self.logger.debug("CSV checkbox widget created")
@@ -233,24 +244,24 @@ class GradingAnalysisTool:
 
         self.logger.info("Thresholds setup on root completed")
 
-        
-    def threshold_popup(self, which, analysis=False, flags=None):
+    
+    #Some commands need thresholds, but it wouldn;t look right to have them on main
+    #popup seemed like the best way
+    #you can toggle the analysis checkboxes and csv checkbox on or off, but you at least need the thresholds on it
+    def threshold_popup(self, which=None, analysis=None, window_length=700, window_height=100, analysis_row=0, analysis_column=5):
         self.logger.info(f"Opening threshold popup for: {which}")
 
         self.popup_box_threshold = tk.Toplevel(self.root)
         self.popup_box_threshold.title("Threshold")
-        self.popup_box_threshold.geometry("700x100")
+        self.popup_box_threshold.geometry(f"{window_length}x{window_height}")
         self.logger.debug("Threshold popup window initialized")
 
         self.thresholds_widget(state='normal', where=self.popup_box_threshold, which=which)
         self.logger.info(f"Threshold widgets for '{which}' added to popup")
 
-        if analysis:
-            self.create_analysis_checkboxes(where=self.popup_box_threshold, checkbox_flags=flags)
-            self.logger.info("Analysis checkboxes added to popup")
-
-        self.csv_checkbox_widget(state='normal', where=self.popup_box_threshold)
-        self.logger.info("CSV checkbox widget added to popup")
+        if analysis is not None:
+            self.create_analysis_dropdown(where=self.popup_box_threshold, analysis_options=analysis, row=analysis_row, column=analysis_column)
+            self.logger.info("Analysis dropdown added to popup")
 
         self.logger.debug("All widgets added to threshold popup")
 
@@ -280,6 +291,8 @@ class GradingAnalysisTool:
         self.reset_gui()
         self.logger.info("GUI reset after command execution")
 
+
+    #foolproof function to minimize error brought by thresholds, they love to break
     def get_valid_integer(self, threshold = gaw.ThresholdWidget()):
         if threshold is not None:
             try:
@@ -291,6 +304,8 @@ class GradingAnalysisTool:
         else:
             self.logger.warning(f"Threshold not found")
             return None
+
+
 
     def get_thresholds(self):
         self.logger.info("Retrieving threshold values")
@@ -314,7 +329,7 @@ class GradingAnalysisTool:
 
         history_path = os.path.join(os.getcwd(), '.history.json')
         
-        # Update the appropriate attribute based on which
+        #update the appropriate attribute based on which file is being updated
         attribute_map = {
             self.input_file_name: "input_file_name",
             self.output_directory: "output_directory",
@@ -330,7 +345,7 @@ class GradingAnalysisTool:
         else:
             self.logger.warning(f"Unrecognized attribute for update: {which}")
 
-        # Update .history.json
+        #update .history.json 
         if os.path.exists(history_path):
             with open(history_path, 'w') as f:
                 history = {
@@ -362,6 +377,7 @@ class GradingAnalysisTool:
             "Instructor Analysis": self.command_InstAnalysis,
             "Major Analysis": self.command_MjrAnalysis,
             "Course Analysis": self.command_CrsAnalysis,
+            "Section Analysis": self.command_SectionAnalysis,
             "Student Level Analysis": self.command_StudentLevelAnalysis,
             "Run All Commands": self.command_All_Commands,
             "Quit": self.quit_program
@@ -383,6 +399,8 @@ class GradingAnalysisTool:
 ##########################################################################################
 ##specific functions
         
+
+    #used for Unique List to do some basic top level analysis on main attributes of the data
     def numpy_array_metadata(self, arr):
         if arr.size == 0:
             print("The array is empty.")
@@ -399,7 +417,9 @@ class GradingAnalysisTool:
     def quit_program(self):
         self.logger.info("Quitting Program")
         exit()
-        
+
+
+    #no idea how this works or if it even works, need to visit again. works for now tho
     def dynamic_resizing(self):
         self.logger.info("Setting up dynamic resizing for the GUI")
 
@@ -425,11 +445,23 @@ class GradingAnalysisTool:
 
             if not os.path.isfile(full_path):
                 self.logger.error(f"Pre-processor check failed. Missing file: {file_name}")
-                messagebox.showerror("Preprocessor Check Failed", f"Please run the preprocessor file to use the GUI. Missing file: {file_name}")
+                messagebox.showerror("Preprocessor Check Failed", f"Please run the generateTables file to use the GUI. Missing file: {file_name}")
+                self.ask_run_generateTables()
                 sys.exit()
 
         self.logger.info("Pre-processor check completed successfully")
         return
+    
+    def ask_run_generateTables(self):
+        self.logger.info("Asking user to run generateTables.py")
+
+        if messagebox.askyesno("Preprocessor Check Failed", "Please run the generateTables file to use the GUI. Would you like to run it now?"):
+            self.logger.debug("User selected to run generateTables.py")
+            subprocess.Popen([sys.executable, "generateTables.py"])
+            sys.exit()
+        else:
+            self.logger.debug("User selected not to run generateTables.py")
+            sys.exit()
 
         
     def run_command_button_toggle(self, state = "normal"):
@@ -438,12 +470,14 @@ class GradingAnalysisTool:
 
 
 ##use this all the time
+    #lovely command to bind a helpful tooltip to literally anything tkinter
     def bind_tooltip_events(self, widget, text):
-        # Bind tooltip show and hide events to a widget
         tooltip = gaw.ToolTip(widget, text)
         widget.bind("<Enter>", lambda event: tooltip.showtip())
         widget.bind("<Leave>", lambda event: tooltip.hidetip())
 
+
+    #creates the console output for the terminal
     def write_to_GUI(self):
         self.logger.info("Writing to GUI terminal output")
 
@@ -520,12 +554,14 @@ class GradingAnalysisTool:
 
 ################################################################################################################################################
 
+
+    #goal here is, after every command, the whole gui is reset as it is on startup. Ensures nothing breaks and 
+    #no weird errors occur by variables states being in weird state when running specific commands
     def reset_gui(self):
         self.logger.info("Resetting the GUI")
 
-        # Reset state variables
         self.dept = self.major = self.faculty = self.min_enrollment = self.max_enrollment = \
-        self.min_sections = self.max_sections = None
+        self.min_sections = self.max_sections = self.generic_instance = None
 
 
 
@@ -873,6 +909,7 @@ class GradingAnalysisTool:
         
 ##########################################################################################################
 #set choices widgets
+    
         
     def set_choices_department_major(self):
         self.logger.info("Setting department and major choices")
@@ -1119,35 +1156,53 @@ class GradingAnalysisTool:
         
     def command_MjrAnalysis(self):
         self.run_command_button_toggle(state = "disabled")
-        self.threshold_popup(which='sections_enrollment', flags=[True,True,False])
+        self.threshold_popup(which='sections_enrollment', analysis=dic.major_analysis_options, window_length=700, window_height=100, analysis_row=0, analysis_column=4)
+        self.csv_checkbox_widget(where=self.popup_box_threshold, state="normal", row=1, column=4)
         self.confirm_threshold_choice(self.run_major_analysis)
 
     def run_major_analysis(self):
-        gaf.MjrGPATrunc(gaf.df, self.output_directory, self.min_enrollment, self.max_enrollment,csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"))
-        gaf.MjrEnroll(gaf.df, self.output_directory, self.min_enrollment, self.max_enrollment, csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"))
+        gaf.MajorAnalysis(gaf.df, self.output_directory, self.min_enrollment, self.max_enrollment, self.min_sections, self.max_sections, csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"))
         self.hyperlink_filepath()
         self.reset_gui()
 
+    def command_SectionAnalysis(self):
+        self.run_command_button_toggle(state = "disabled")
+        self.threshold_popup(which='sections_enrollment', analysis=dic.section_analysis_options, window_length=700, window_height=100, analysis_row=0, analysis_column=4)
+        self.csv_checkbox_widget(where=self.popup_box_threshold, state="normal", row=2, column=4)
+        self.generic_instance = gaw.tkDropdown(self.popup_box_threshold, row=1, column=4, options_dict={course: False for course in gaf.uniqueCrs.flatten()})
+        self.confirm_threshold_choice(self.run_section_analysis)
+
+    def run_section_analysis(self):
+        self.course_name = self.generic_instance.get_selected_option()
+        if self.course_name not in gaf.uniqueCrs:
+            print("Error: invalid course")
+            return
+        else:
+            pass
+        gaf.section_analysis(gaf.df, user_directory=self.output_directory, course_name=self.course_name, min_enrollments=self.min_enrollment, max_enrollments=self.max_enrollment, min_sections=self.min_sections, max_sections=self.max_sections, csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"))
+        self.hyperlink_filepath()
+        self.reset_gui()
 
     def command_CrsAnalysis(self):
         self.run_command_button_toggle(state = "disabled")
-        self.threshold_popup(which='sections_enrollment', analysis=True, flags=[True,True,False])
+        self.threshold_popup(which='sections_enrollment', analysis=dic.course_analysis_options, window_length=700, window_height=100, analysis_row=0, analysis_column=4)    
+        self.csv_checkbox_widget(where=self.popup_box_threshold, state="normal", row=1, column=4)
         self.confirm_threshold_choice(self.run_crs_analysis)
 
-
     def run_crs_analysis(self):
-        gaf.CourseGPA(gaf.df, self.output_directory, self.min_enrollment, self.max_enrollment, self.min_sections, self.max_sections, csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"), useGPA=self.analysis_checkbox.get_dict_of_checkbox().get("GPA Analysis"), useEnrollments=self.analysis_checkbox.get_dict_of_checkbox().get("Enrollment Analysis"))
+        gaf.CourseGPA(gaf.df, self.output_directory, self.min_enrollment, self.max_enrollment, self.min_sections, self.max_sections, csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"))
         self.hyperlink_filepath()
         self.reset_gui()
 
     def command_StudentLevelAnalysis(self):
         self.run_command_button_toggle(state = "disabled")
-        self.threshold_popup(which='enrollment', analysis=True, flags=[False,False,True])
+        self.threshold_popup(which='class_size', analysis=None, csv=True, window_length=400, window_height=100)
+        self.heatmap_checkbox_widget(where=self.popup_box_threshold, state="normal", row=0, column=4)
         self.confirm_threshold_choice(self.run_student_level_analysis)
     
     def run_student_level_analysis(self):
         gaf.Level_Inflation(gaf.df, user_directory=self.output_directory, min_enrollments=self.min_enrollment, max_enrollments=self.max_enrollment, csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"))
-        gaf.CourseLevelGrade(gaf.df, heatmap=self.analysis_checkbox.get_dict_of_checkbox().get("Heatmap"), user_directory=self.output_directory, min_enrollments=self.min_enrollment, max_enrollments=self.max_enrollment, csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"))
+        gaf.CourseLevelGrade(gaf.df, heatmap=self.heatmap_checkbox.get_dict_of_checkbox().get("Heatmap"), user_directory=self.output_directory, min_enrollments=self.min_enrollment, max_enrollments=self.max_enrollment, csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"))
         self.hyperlink_filepath()
         self.reset_gui()
       
@@ -1188,7 +1243,7 @@ class GradingAnalysisTool:
         gaf.MjrEnroll(gaf.df, self.output_directory, self.min_enrollment, self.max_enrollment, csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"))
         gaf.CourseGPA(gaf.df, self.output_directory, self.min_enrollment, self.max_enrollment, self.min_sections, self.max_sections, csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"), useGPA=self.analysis_checkbox.get_dict_of_checkbox().get("GPA Analysis"), useEnrollments=self.analysis_checkbox.get_dict_of_checkbox().get("Enrollment Analysis"))
         gaf.Level_Inflation(gaf.df, user_directory=self.output_directory, min_enrollments=self.min_enrollment, max_enrollments=self.max_enrollment, csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"))
-        gaf.CourseLevelGrade(gaf.df, heatmap=self.analysis_checkbox.get_dict_of_checkbox().get("Heatmap"), user_directory=self.output_directory, min_enrollments=self.min_enrollment, max_enrollments=self.max_enrollment, csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"))
+        gaf.CourseLevelGrade(gaf.df, heatmap=self.heatmap_checkbox.get_dict_of_checkbox().get("Heatmap"), user_directory=self.output_directory, min_enrollments=self.min_enrollment, max_enrollments=self.max_enrollment, csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"))
 
         self.hyperlink_filepath()
         self.reset_gui()
