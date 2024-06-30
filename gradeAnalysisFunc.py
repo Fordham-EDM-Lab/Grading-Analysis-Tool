@@ -2,86 +2,117 @@ from prompt_toolkit import prompt
 from prompt_toolkit.completion import PathCompleter
 from prompt_toolkit.completion import WordCompleter
 import string
+import random
 from timeit import repeat
+from pandas.core.reshape.concat import concat
+from tkinter import ttk
 import pandas as pd
 import csv
 import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sns
 import os
-from matplotlib.backends.backend_pdf import PdfPages
-import csv
+import tkinter as tk
 import gradeAnalysisWidgets as gaw
 import dictionary as dic
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
+from matplotlib.figure import Figure
+from tabulate import tabulate
+from sklearn.preprocessing import (
+    StandardScaler,
+    MinMaxScaler,
+    RobustScaler,
+    MaxAbsScaler,
+    Normalizer,
+)
+def file_path(file):
+    return os.path.join(os.path.dirname(os.path.realpath(__file__)), file)
 
-
-
-
-
-
-plt.rcParams.update({'font.size': 14})
+plt.rcParams.update({"font.size": 14})
 
 # save the data file as df
-df = pd.read_csv('filteredData.csv')
+df = pd.read_csv(file_path("filteredData.csv"))
 
 # get useful list of all unique departments, majors, instructors, courses, UniqueCourseID, and students
-uniqueDept = df['Department'].unique()
-uniqueMjr = df['Major'].unique()
-uniqueInst = df['FacultyID'].unique()
-uniqueCrs = df['CourseTitle'].unique()
-uniqueCRSID = df['UniqueCourseID'].unique()
-uniqueStud = df['SID'].unique()
+uniqueDept = df["Department"].unique()
+uniqueMjr = df["Major"].unique()
+uniqueInst = df["FacultyID"].unique()
+uniqueCrs = df["CourseTitle"].unique()
+uniqueCRSID = df["UniqueCourseID"].unique()
+uniqueStud = df["SID"].unique()
+
 
 # returns filtered dataframe. Each condition should be passed as column name = LIST of targets
-    # e.g. "filter(df, crsTitle = ['PHYSICS I LAB'], facultyID = ['F18125', 'F97128'])" returns df with 84 rows
+# e.g. "filter(df, crsTitle = ['PHYSICS I LAB'], facultyID = ['F18125', 'F97128'])" returns df with 84 rows
 def filter(df, **kwargs):
     for key in kwargs.keys():
         df = df[(df[key]).isin(kwargs.get(key))]
     return df
 
 
-#All this is done to make a csv file with all the unique entries appearing in the given dataset. It is
-#not used and is only there for refrence purposes.
-
+# All this is done to make a csv file with all the unique entries appearing in the given dataset. It is
+# not used and is only there for refrence purposes.
 
 
 def save_unique_entries(df, user_directory):
-    uniqueDept = df['Department'].unique()
-    uniqueMjr = df['Major'].unique()
-    uniqueInst = df['FacultyID'].unique()
-    uniqueCrs = df['CourseTitle'].unique()
-    uniqueCRSID = df['UniqueCourseID'].unique()
-    uniqueStud = df['SID'].unique()
+    uniquevalue = df["Department"].unique()
+    uniqueMjr = df["Major"].unique()
+    uniqueInst = df["FacultyID"].unique()
+    uniqueCrs = df["CourseTitle"].unique()
+    uniqueCRSID = df["UniqueCourseID"].unique()
+    uniqueStud = df["SID"].unique()
 
-    save_path = os.path.join(user_directory, 'unique_entries.csv')
+    save_path = os.path.join(user_directory, "unique_entries.csv")
 
-
-    with open(save_path, 'w', newline='') as f:
+    with open(save_path, "w", newline="") as f:
         writer = csv.writer(f)
 
         # Write headers
-        writer.writerow(['These values are purely informational and do not correlate between columns.'])
-        writer.writerow(['They are the unique values that appear in the dataset for the given column.'])
-        writer.writerow(['Departments:', 'Majors:', 'FacultyIDs:', 'CourseTitles:', 'UniqueCourseIDs:', 'SIDs:'])
+        writer.writerow(
+            [
+                "These courses are purely informational and do not correlate between columns."
+            ]
+        )
+        writer.writerow(
+            [
+                "They are the unique courses that appear in the dataset for the given column."
+            ]
+        )
+        writer.writerow(
+            [
+                "Departments:",
+                "Majors:",
+                "FacultyIDs:",
+                "CourseTitles:",
+                "UniqueCourseIDs:",
+                "SIDs:",
+            ]
+        )
 
-
-        max_length = max(len(uniqueDept), len(uniqueMjr), len(uniqueInst), 
-                         len(uniqueCrs), len(uniqueCRSID), len(uniqueStud))
+        max_length = max(
+            len(uniquevalue),
+            len(uniqueMjr),
+            len(uniqueInst),
+            len(uniqueCrs),
+            len(uniqueCRSID),
+            len(uniqueStud),
+        )
 
         for i in range(max_length):
             row = [
-                uniqueDept[i] if i < len(uniqueDept) else '',
-                uniqueMjr[i] if i < len(uniqueMjr) else '',
-                uniqueInst[i] if i < len(uniqueInst) else '',
-                uniqueCrs[i] if i < len(uniqueCrs) else '',
-                uniqueCRSID[i] if i < len(uniqueCRSID) else '',
-                uniqueStud[i] if i < len(uniqueStud) else ''
+                uniquevalue[i] if i < len(uniquevalue) else "",
+                uniqueMjr[i] if i < len(uniqueMjr) else "",
+                uniqueInst[i] if i < len(uniqueInst) else "",
+                uniqueCrs[i] if i < len(uniqueCrs) else "",
+                uniqueCRSID[i] if i < len(uniqueCRSID) else "",
+                uniqueStud[i] if i < len(uniqueStud) else "",
             ]
             writer.writerow(row)
 
         print("\n\nFile Created:", f" {save_path}\n\n")
 
 
-def drop_values_by_threshold(df, column, min_threshold=None, max_threshold=None):
+def drop_courses_by_threshold(df, column, min_threshold=None, max_threshold=None):
     if min_threshold is not None:
         df = df[df[column] >= min_threshold]
     if max_threshold is not None:
@@ -89,588 +120,1312 @@ def drop_values_by_threshold(df, column, min_threshold=None, max_threshold=None)
     return df
 
 
-def avgWeighted(df, value, weight):
-    return (df[weight] * df[value]).sum() / df[weight].sum()
+def avgWeighted(df, course, weight):
+    return (df[weight] * df[course]).sum() / df[weight].sum()
+
 
 # generate table of student grade distribution of all courses
-def AllCoursesGradeDist(df):
-    studGradeDistribution = df['FinLetterGrade'].value_counts()
-    print("\nStudent Letter Grade Distribution over all courses: ")
-    print(studGradeDistribution.to_string(header=False))
-
-# Instructor Grade Distribution table
-def GradeDist(df):
-    it = pd.read_csv('instTable.csv')
-    ranges = [2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9,
-              3.0, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 4.0]
-    # Number of instructors in each GPA range
-    instGradeDist = it['GPA W'].groupby(pd.cut(it['GPA W'], ranges), observed=True).count()
-    instPer = ((it['GPA W'].groupby(pd.cut(it['GPA W'], ranges), observed=True).count()) / (len(it['GPA W']))) * 100
-
-    
-    print("\nStudent Grade Distribution over all instructors: ")
-    print(instGradeDist.to_string(header=False))
-    print("\nin percentages: ")
-    print(round(instPer, 3).to_string(header=False))
-
-# average & std grades of all courses
-def UniversityCoursesMean(df):
-    print("\nGPA of all courses in the university:", round(avgWeighted(df, 'FinNumericGrade', 'CredHrs'), 3), "\n")
-    #print(round(avgWeighted(df, 'FinNumericGrade', 'CredHrs'), 3))
-    print("\nStandard Deviation of all courses GPA:", round(df['FinNumericGrade'].std(), 3), "\n")
-    #print(round(df['FinNumericGrade'].std(), 3))
-
-#TODO: output the unique lists fully.
 # a list of all unique departments, majors, instructors, courses, UniqueCourseID, and students
 def unique(df):
     req = input(
-        "\nWould you like a list of unique Departments, Majors, Instructor IDs, Courses, UniqueCourseID, or Student IDs?\n")
-    if (req == 'Departments'):
+        "\nWould you like a list of unique Departments, Majors, Instructor IDs, Courses, UniqueCourseID, or Student IDs?\n"
+    )
+    if req == "Departments":
         print("\nThese are all Departments:")
         print(uniqueDept)
-    elif (req == 'Majors'):
+    elif req == "Majors":
         print("\nThese are all Majors:")
         print(uniqueMjr)
-    elif (req == 'Instructor IDs'):
+    elif req == "Instructor IDs":
         print("\nThese are all Instructor IDs:")
         print(uniqueInst)
-    elif (req == 'Courses'):
+    elif req == "Courses":
         print("\nThese are all Courses:")
         print(uniqueCrs)
-    elif (req == 'UniqueCourseID'):
+    elif req == "UniqueCourseID":
         print("\nThese are all UniqueCourseID:")
         print(uniqueCRSID)
-    elif (req == 'Student IDs'):
+    elif req == "Student IDs":
         print("\nThese are all Student IDs:")
         print(uniqueStud)
     else:
         print("This is not a valid option.")
 
+
 # average & std grades of all students taking courses in specific department
-def DepartmentCoursesMean(df, dept):
-    deptMean = df.loc[df['Department'] == dept, 'FinNumericGrade'].mean()
-    stdDept = df.loc[df['Department'] == dept, 'FinNumericGrade'].std()
-    print("\n" + dept + " department courses mean grade:", round(deptMean, 3), "\n")
-    #print(deptMean)
-    print(dept + " department courses grade standard deviation:", round(stdDept, 3), "\n")
-    #print(stdDept)
-
-# average & std dev of grades of all students of a specific major (all courses in major department or not)
-def MajorDegreeMean(df, major):
-    majorMean = df.loc[df['Major'] == major, 'FinNumericGrade'].mean()
-    stdMajor = df.loc[df['Major'] == major, 'FinNumericGrade'].std()
-    print("\n" + major + " majors mean grade:", round(majorMean, 3), "\n")
-    #print(majorMean)
-    print(major + " majors grade standard deviation:", round(stdMajor, 3), "\n")
-    #print(stdMajor)
-
-# average & std dev of grades of all courses in the specific major's department that students with that specific major take
-def MajorDeptMean(df, major, dept):
-    DMajorMean = df.loc[(df['Major'] == major) & (
-        df['Department'] == dept), 'FinNumericGrade'].mean()
-    stdDMajor = df.loc[(df['Major'] == major) & (
-        df['Department'] == dept), 'FinNumericGrade'].std()
-    print("\n" + major + " majors mean grade in its department courses:", round(DMajorMean, 3), "\n")
-    #print(DMajorMean)
-    print(major + " majors grade standard deviation in its department courses:", round(stdDMajor, 3), "\n")
-    #print(stdDMajor)
-
-# average GPA, std dev, lowest and highest grades of a specific faculty.
-def FacultyAnalysis(df, fac):
-    FacMean = df.loc[df['FacultyID'] == fac, 'FinNumericGrade'].mean()
-    stdFac = df.loc[df['FacultyID'] == fac, 'FinNumericGrade'].std()
-    facLow = df.loc[df['FacultyID'] == fac, 'FinNumericGrade'].min()
-    facHigh = df.loc[df['FacultyID'] == fac, 'FinNumericGrade'].max()
-    print("\n" + fac + " Faculty Analysis.")
-    print("Instructor's GPA:", round(FacMean, 3), "\n")
-    #print(FacMean)
-    print("Student's std. dev. grades:", round(stdFac, 3), "\n")
-    #print(stdFac)
-    print("Lowest and highest grades assigned - Lowest:", round(facLow, 3), " Highest:", round(facHigh, 3), "\n")
-    # print(facLow)
-    # print(facHigh)
-
-# Compute the number of enrollments using class size
-def enrollments(df, classSize):
-    return round((df[classSize]).sum(), 3)
-
-# Create a table with number of enrollments per department
-def DeptEnroll(df):
-    print("\nNumber of enrollments per university department: ")
-    print(df.groupby(df['Department']).apply(enrollments, 'ClassSize').to_string(header=False))
-
-# Create a table |major, # of unique students|
-def StudMjrCount(df):
-    print("\nNumber of unique students enrolled in a major: ")
-    print(df['Major'].value_counts().to_string(header=False))
-
-# If someone inputs an incomplete name, check to see if it's possible it is a substring of an existing item
-def checkMultiple(og, ogList):
-    checkList = np.array([])
-    for check in ogList:
-        if og in check:
-            checkList.append(check)
-    
-    if len(checkList) > 1:
-        print("\nWhat you entered is valid for the following items: " + " ")
-        print(checkList)
-        new_value = input("Enter the specific name for what you are attempting to write down: \n")
-        return new_value
-    elif len(checkList) == 1:
-        return checkList[0]
-    elif len(checkList) == 0:
-        print("\nThis is an invalid item. If you need to see a list of valid instructors, type UniqueList.")
-        return og
 
 
 # RESEARCH CODE:
 # Function to create a list of consecutive numbers spaced out as needed (to use when creating bins for a graph)
 def createList(r1, r2, space):
-    if (r1 == r2):
+    if r1 == r2:
         return 0
     else:
         cl = []
-        while(r1 < r2+1):
+        while r1 < r2 + 1:
             cl.append(r1)
             r1 += space
         return cl
 
-# department grades bar chart (y=gpa, x=department) for departments with enrollments > 600
+
+# department grades bar chart (y=gpa, x=department) for departments with enrollments > 700
 def coloring(dt):
-    # department grades bar chart (y=gpa, x=department) for departments with enrollments > 600
+    # department grades bar chart (y=gpa, x=department) for departments with enrollments > 700
     barsColor = []
-    #clustering departments per area of study 
-    arts = {'Theatre', 'Visual Arts', 'Music', 'Dance', 'Julliard Exchange'}
-    comm = {'Comm & Media Stud.', 'Comm. & Culture', 'New Media/Dig. Dsgn', 'Digital Tech/Media', 'Film & Television', 'Journalism', 'Marketing'}
-    hum = {'Anthropology', 'Afr. & Afr. Amer Stud.', 'Art History', 'English', 'History', 'Philosophy', 'Theology', 'Irish Stud.', 'Classic Lang & Civ.', 'Amer Catholic Stud.', 'Medieval Stud.', 'Latin Amer & Latino Stud.', 'Comparative Lit.', 'American Stud.', 'Linguistics'}
-    lang = {'French', 'German', 'Japanese', 'Russian', 'Arabic', 'Latin', 'Greek', 'Italian', 'Mandarin Chinese', 'Spanish', 'Modern Languages', 'HEBW'}
-    sciTec = {'Biological Sci.', 'Chemistry', 'Physics', 'Comp & Info Sci.', 'Math', 'Natural Sci.', 'Environmental Sci.', 'Integrative Neuroscience', 'Information Systems'}
-    soSci = {'Economics', 'Political Sci.', 'Psychology', 'Sociology', 'Social Work', 'Peace&Justice Stud.', 'Human. Affairs', 'Human. Stud.', 'Ethics Education', 'WG&S Stud.', "Women's Stud.", 'Middle East Studies', 'International Stud.', 'Urban Stud.',
- 'Environmental Policy', 'Environmental Stud.', 'Management'}
-    dt.sort_values('GPA W', inplace=True)
-    uniqueDept = dt['Department'].unique()
-    for dpt in uniqueDept:
+    # clustering departments per area of study
+    arts = {"Theatre", "Visual Arts", "Music", "Dance", "Julliard Exchange"}
+    comm = {
+        "Comm & Media Stud.",
+        "Comm. & Culture",
+        "New Media/Dig. Dsgn",
+        "Digital Tech/Media",
+        "Film & Television",
+        "Journalism",
+        "Marketing",
+    }
+    hum = {
+        "Anthropology",
+        "Afr. & Afr. Amer Stud.",
+        "Art History",
+        "English",
+        "History",
+        "Philosophy",
+        "Theology",
+        "Irish Stud.",
+        "Classic Lang & Civ.",
+        "Amer Catholic Stud.",
+        "Medieval Stud.",
+        "Latin Amer & Latino Stud.",
+        "Comparative Lit.",
+        "American Stud.",
+        "Linguistics",
+    }
+    lang = {
+        "French",
+        "German",
+        "Japanese",
+        "Russian",
+        "Arabic",
+        "Latin",
+        "Greek",
+        "Italian",
+        "Mandarin Chinese",
+        "Spanish",
+        "Modern Languages",
+        "HEBW",
+    }
+    sciTec = {
+        "Biological Sci.",
+        "Chemistry",
+        "Physics",
+        "Comp & Info Sci.",
+        "Math",
+        "Natural Sci.",
+        "Environmental Sci.",
+        "Integrative Neuroscience",
+        "Information Systems",
+    }
+    soSci = {
+        "Economics",
+        "Political Sci.",
+        "Psychology",
+        "Sociology",
+        "Social Work",
+        "Peace&Justice Stud.",
+        "Human. Affairs",
+        "Human. Stud.",
+        "Ethics Education",
+        "WG&S Stud.",
+        "Women's Stud.",
+        "Middle East Studies",
+        "International Stud.",
+        "Urban Stud.",
+        "Environmental Policy",
+        "Environmental Stud.",
+        "Management",
+    }
+    dt.sort_courses("GPA W", inplace=True)
+    uniquevalue = dt["Department"].unique()
+    for dpt in uniquevalue:
         if dpt in arts:
-            color = '#e6ae6e' #orangy
+            color = "#e6ae6e"  # orangy
         elif dpt in hum:
-            color = '#e6ae6e' #orangy
+            color = "#e6ae6e"  # orangy
         elif dpt in lang:
-            color = '#e6ae6e' #orangy
+            color = "#e6ae6e"  # orangy
         elif dpt in comm:
-            color = '#94bff7' #light blue
+            color = "#94bff7"  # light blue
         elif dpt in soSci:
-            color = '#94bff7' #sky blue
+            color = "#94bff7"  # sky blue
         elif dpt in sciTec:
-            color = '#18979e' #teal
+            color = "#18979e"  # teal
         else:
-            color = '#000000' #black
+            color = "#000000"  # black
         barsColor.append(color)
-    
+
     return barsColor
 
-def plotter(title, window_width=800, window_height=600, df=pd.DataFrame, x_label="", y_label="", plot_type='line', color='blue', x_plot="", y_plot=""):
-    plotter = gaw.tkMatplot(title, window_width, window_height)
-    object_return = plotter.plot(df, x_label, y_label, plot_type, color, x_plot, y_plot)
-    return object_return
 
-def DeptGPA(user_directory, min_enrollments = None, max_enrollments = None):   
-    DeptTable = pd.read_csv('deptTable.csv') 
-
-    DeptTable = drop_values_by_threshold(DeptTable, 'Enrollments', min_enrollments, max_enrollments)
-
-    DeptTable.reset_index()
-    DeptTable.sort_values('GPA W', inplace=True)
-    barsColor = coloring(DeptTable)
-    da = DeptTable.plot.bar(x='Department', y='GPA W', figsize=(20,3), color=barsColor, legend=False, width=.8)
-    da.set_ylabel("GPA")
-    da.set_xlabel(None)
-    plt.axhline(DeptTable['GPA W'].mean(), color='red', linestyle = 'dashed', linewidth=2)
-    plt.axis([None, None, 2.7, 3.8])
-    
-    colors={'Arts, Humanities, and Language':'#e6ae6e', 'Communication and Social Science':'#94bff7', 'STEM':'#18979e'}   
-    labels = list(colors.keys())
-    handles = [plt.Rectangle((0,0),1,1, color=colors[label]) for label in labels]
-    da.legend(handles, labels)
-    da.yaxis.grid()
-    save_path = os.path.join(user_directory, 'Figure2.3.jpg')
-    print("\n\nFile Created:", f" {save_path}\n\n")
-
-    plt.savefig(save_path, bbox_inches='tight')
-
-# department size bar chart (y=enrollments, x=department) for departments with enrollments > 600
-def DeptSize(user_directory,  min_enrollments = None, max_enrollments = None):
-    DeptTable = pd.read_csv('deptTable.csv')
-
-    DeptTable = drop_values_by_threshold(DeptTable, 'Enrollments', min_enrollments, max_enrollments)
-
-    DeptTable.sort_values('Enrollments', inplace=True)
-    de = DeptTable.plot.bar(x='Department', y='Enrollments', figsize=(
-        20, 5), color='#f5a142', legend=False)
-    de.yaxis.grid()
-    de.set_xlabel("Department")
-    de.set_ylabel("Department Enrollments")
-    plt.axhline(DeptTable['Enrollments'].mean(),
-                color='red', linestyle='dashed', linewidth=2)
-    save_path = os.path.join(user_directory, 'DeptEnrolBarTrunc.jpg')
-    print("\n\nFile Created:", f" {save_path}\n\n")
-    plt.savefig(save_path, bbox_inches='tight')
-
-# bar chart that shows number of enrollments and department average grades simultaneously.
-def DeptEnrollGPA(user_directory, min_enrollments = None, max_enrollments = None):
-    DeptTable = pd.read_csv('deptTable.csv')
-
-    DeptTable = drop_values_by_threshold(DeptTable, 'Enrollments', min_enrollments, max_enrollments)
-
-    fig = plt.figure()
-    ax1 = fig.add_subplot(111)
-    ax2 = ax1.twinx()
-    ax1.axis([None, None, 2.5, 4.0])
-    ax1.set_ylabel('Weighted GPA')
-    ax2.set_ylabel('Department Enrollments')
-    DeptTable.plot.bar(x='Department', y='GPA W', ax=ax1,
-                    figsize=(20, 5), color='#18979e')
-    DeptTable.plot.bar(x='Department', y='Enrollments', ax=ax2,
-                    figsize=(20, 5), color='#f5a142', alpha=0.8)
-    plt.legend(['Enrollments'], loc='best', bbox_to_anchor=(0.9, 0.5, 0, 0.5))
-    save_path = os.path.join(user_directory, 'DeptAvgEnrolTrunc.jpg')
-    print("\n\nFile Created:", f" {save_path}\n\n")
-    plt.savefig(save_path, bbox_inches='tight')
-
-    corr = np.corrcoef(DeptTable['Enrollments'], DeptTable['GPA W'])
-    print("\nCorrelation Coefficient between Enrollments and GPA:", corr)
-    
-
-#Scatter plot: total number of students in a department vs. grades in that department enrollments > 600
-def DeptStudGPA(user_directory, min_enrollments = None, max_enrollments = None):
-    DeptTable = pd.read_csv('deptTable.csv')
-    
-    DeptTable = drop_values_by_threshold(DeptTable, 'Enrollments', min_enrollments, max_enrollments)
+def check_list_is_subset(target_list, check_list):
+    return set(target_list).issubset(check_list)
 
 
-    DeptTable.reset_index()
-    dotsColor = coloring(DeptTable)
-    dt = DeptTable.plot.scatter(x='Enrollments', y='GPA W', figsize=(10,4), color=dotsColor, s=50)
-    plt.yticks(np.arange(2.8, 3.8, step=0.1))
-    plt.axhline(DeptTable['GPA W'].mean(), color='red', linestyle = 'dashed', linewidth=2)
-    dt.set_xlabel("Department Enrollments")
-    dt.set_ylabel("GPA")
-    colors={'Humanities':'#e6ae6e', 'Communication':'#94bff7', 'STEM':'#18979e'}   
-    labels = list(colors.keys())
-    handles = [plt.Rectangle((0,0),1,1, color=colors[label]) for label in labels]
-    dt.legend(handles, labels)
-    dt.yaxis.grid()
-    save_path = os.path.join(user_directory, 'Figure3.2.jpg')
-    print("\n\nFile Created:", f" {save_path}\n\n")
-    plt.savefig(save_path, bbox_inches='tight')
+def MajorDepartmentAnalysis(
+    df,
+    department,
+    major,
+    user_directory=None,
+    min_enrollments=None,
+    max_enrollments=None,
+    min_sections=None,
+    max_sections=None,
+    csv=False,
+    generate_grade_dist=False,
+):
+    deptTable = pandas_df_agg(df, "Department")
+    mjrTable = pandas_df_agg(df, "Major")
 
-
-bins = createList(2, 4, 0.05)
-
-
-# instructor Grade Distribution histogram -- frequency of grades, excluding inst teaching < 10 sections
-def InstGPATrunc(df, user_directory, min_sections = None, max_sections = None, csv=False):
-    InstTable = pd.read_csv('instTable.csv')
-    InstTable.sort_values('GPA W', inplace=True)
-
-    InstTable = drop_values_by_threshold(InstTable, 'Sections' , min_sections, max_sections)
-
-    InstTable.reset_index()
-    if csv:
-        save_path = os.path.join(user_directory, 'instTableGPAVsInst.csv')
-        print("\n\nFile Created:", f" {save_path}\n\n")
-
-        InstTable.to_csv(save_path, encoding='utf-8-sig')
-
-    it = InstTable.plot.hist(x='Instructor', y='GPA W', figsize=(13,3), bins=bins, color='steelblue', legend=False)
-    it.set_xlabel("Weighted GPA")
-    it.set_ylabel("Number of Instructors")
-    plt.axvline(InstTable['GPA W'].mean(), color='red', linestyle = 'dashed', linewidth=2)
-    plt.xticks(bins, rotation='vertical')
-    plt.axis([2.1, 4.0, None, None])
-    it.yaxis.grid()
-    save_path = os.path.join(user_directory, 'InstGPATrunc.jpg')
-    print("\n\nFile Created:", f" {save_path}\n\n")
-
-    plt.savefig(save_path, bbox_inches='tight')
-
-# instructor Enrollment Distribution histogram for instructors with the number of students taught(enrollements) > 200
-def InstEnrollTrunc(df, user_directory, min_enrollments = None, max_enrollments = None, csv=False):
-    InstTable = pd.read_csv('instTable.csv')
-    InstTable.sort_values('Enrollments', inplace=True)
-    
-    InstTable = drop_values_by_threshold(InstTable, 'Enrollments' , min_enrollments, max_enrollments)
-
-
-    InstTable.reset_index()
+    deptTable = deptTable[deptTable["Department"] == department]
+    mjrTable = mjrTable[mjrTable["Major"] == major]
 
     if csv:
-        save_path = os.path.join(user_directory, 'instTableEnrollVsInst.csv')
+        save_path = os.path.join(user_directory, f"{department}_data.csv")
         print("\n\nFile Created:", f" {save_path}\n\n")
-        InstTable.to_csv(save_path, encoding='utf-8-sig')
+        deptTable.to_csv(save_path, encoding="utf-8-sig")
+        save_path = os.path.join(user_directory, f"{major}_data.csv")
+        print("\n\nFile Created:", f" {save_path}\n\n")
+        mjrTable.to_csv(save_path, encoding="utf-8-sig")
 
-    enrollList = createList(200, 3700, 50)
-    it = InstTable.plot.hist(x='Instructor', y='Enrollments', figsize=(
-        18, 5), bins=enrollList, color='#f5a142', legend=False)
-    it.set_xlabel("Enrollment Range")
-    it.set_ylabel("Number of Instructors")
-    plt.axvline(InstTable['Enrollments'].mean(),
-                color='red', linestyle='dashed', linewidth=2)
-    plt.xticks(enrollList, rotation='vertical')
-    plt.axis([200, 3700, None, None])
-    it.yaxis.grid()
-    save_path = os.path.join(user_directory, 'InstEnrollHistTrunc200.jpg')
-    print("\n\nFile Created:", f" {save_path}\n\n")
+    if generate_grade_dist:
+        graph_grade_distribution(
+            df=deptTable,
+            column="Department",
+            target_values=[department],
+            value_colors=gaw.get_random_values(gaw.get_non_red_colors()),
+            user_directory=user_directory,
+            csv=csv,
+        )
+        graph_grade_distribution(
+            df=mjrTable,
+            column="Major",
+            target_values=[major],
+            value_colors=gaw.get_random_values(gaw.get_non_red_colors()),
+            user_directory=user_directory,
+            csv=csv,
+        )
 
-    plt.savefig(save_path, bbox_inches='tight')
+    print(tabulate(deptTable, headers="keys", tablefmt="pretty"))
+    print(tabulate(mjrTable, headers="keys", tablefmt="pretty"))
 
 
+def DepartmentAnalysis(
+    df,
+    user_directory,
+    target_values=None,
+    min_enrollments=None,
+    max_enrollments=None,
+    min_sections=None,
+    max_sections=None,
+    csv=False,
+    generate_grade_dist=False,
+):
+    deptTable = pandas_df_agg(df, "Department")
+    deptTable = drop_courses_by_threshold(
+        deptTable, "Enrollments", min_enrollments, max_enrollments
+    )
+    deptTable = drop_courses_by_threshold(
+        deptTable, "Sections", min_sections, max_sections
+    )
 
-def MajorAnalysis(df, user_directory, min_enrollments = None, max_enrollments = None, min_sections = None, max_sections = None, csv = False):
-    mjrTable = pd.read_csv('majorTable.csv')
+    target_values = list(target_values)
 
-    mjrTable = drop_values_by_threshold(mjrTable, 'Enrollments', min_enrollments, max_enrollments)
-    mjrTable = drop_values_by_threshold(mjrTable, 'Sections', min_sections, max_sections)
+    deptTable = deptTable[deptTable["Department"].isin(target_values)]
 
-    if dic.major_analysis_options['Major vs GPA']:
-        plotter = gaw.tkMatplot(title='Major vs GPA', window_width=800, window_height=600, x_label='Major', y_label='GPA', plot_type='bar', color='teal', x_plot='Major', y_plot='GPA W', df=mjrTable)
+    if dic.department_analysis_options["Department vs GPA"]:
+        plotter = gaw.tkMatplot(
+            title="Department vs GPA",
+            window_width=800,
+            window_height=700,
+            x_label="Department",
+            y_label="GPA",
+            plot_type="bar",
+            color="teal",
+            x_plot="Department",
+            y_plot="GPA",
+            df=deptTable,
+        )
         plotter.plot()
-    
-    if dic.major_analysis_options['Major vs Enrollment']:
-        plotter = gaw.tkMatplot(title='Major vs Enrollment', window_width=800, window_height=600, x_label='Major', y_label='Enrollment', plot_type='scatter', color='teal', x_plot='Major', y_plot='Enrollments', df=mjrTable)
-        plotter.plot()
-    
-    if dic.major_analysis_options['Courses vs GPA']:
-        plotter = gaw.tkMatplot(title='Courses vs GPA', window_width=800, window_height=600, x_label='Courses', y_label='GPA', plot_type='bar', color='teal', x_plot='Courses', y_plot='GPA W', df=mjrTable)
-        plotter.plot()
 
-    if dic.major_analysis_options['Sections vs GPA']:
-        plotter = gaw.tkMatplot(title='Sections vs GPA', window_width=800, window_height=600, x_label='Sections', y_label='GPA', plot_type='scatter', color='teal', x_plot='Sections', y_plot='GPA W', df=mjrTable)
+    if dic.department_analysis_options["Department vs Enrollment"]:
+        plotter = gaw.tkMatplot(
+            title="Department vs Enrollment",
+            window_width=800,
+            window_height=700,
+            x_label="Department",
+            y_label="Enrollment",
+            plot_type="scatter",
+            color="teal",
+            x_plot="Department",
+            y_plot="Enrollments",
+            df=deptTable,
+        )
         plotter.plot()
 
     if csv:
-        save_path = os.path.join(user_directory, 'majorTable.csv')
+        save_path = os.path.join(user_directory, "deptTable.csv")
         print("\n\nFile Created:", f" {save_path}\n\n")
-        mjrTable.to_csv(save_path, encoding='utf-8-sig')
+        deptTable.to_csv(save_path, encoding="utf-8-sig")
 
-        
-    # input: dataframe, name of course as string
-    # returns list of each section: provides UniqueCourseID(newUniqueCourseID that is unique to section), Instructor(facultyID), average GPA, SD, class size (of section)
-    # e.g. try: gpa_by_section(final_df, "English 2000")
-def gpa_by_section(df, course_name):
-    print(course_name) #this is correct
-    sections = list(np.unique((filter(df, CourseTitle = [course_name])['UniqueCourseID'])))
-    to_return = pd.DataFrame(columns =['UniqueCourseID', 'Instructor', 'GPA', 'SD', 'Class Size'])
-    for i in sections:
-        filtered_data = filter(df, CourseTitle = [course_name], UniqueCourseID = [i])
-        to_return.loc[len(to_return)] = [i, (filtered_data.mode()['FacultyID'][0]), np.mean(((filtered_data)['FinNumericGrade']).to_numpy()), np.std(((filtered_data)['FinNumericGrade']).to_numpy()), len(filtered_data.index)]
-    to_return['total'] = to_return['GPA']*to_return['Class Size']
-    to_return['UniqueCourseID'] = to_return['UniqueCourseID'].astype(str)
-    return to_return
+    if generate_grade_dist:
+        graph_grade_distribution(
+            df=deptTable,
+            column="Department",
+            target_values=target_values,
+            value_colors=gaw.get_non_red_colors(),
+            user_directory=user_directory,
+            csv=csv,
+        )
 
-def section_analysis(df, user_directory, course_name, csv = False,  min_enrollments = None, max_enrollments = None, min_sections = None, max_sections = None):
-    sectionTable = gpa_by_section(df, course_name)
-    sectionTable = drop_values_by_threshold(sectionTable, 'Class Size', min_enrollments, max_enrollments)
-    sectionTable = drop_values_by_threshold(sectionTable, 'semyear', min_sections, max_sections)
+    dic.reset_all_false()
 
-    if dic.section_analysis_options['Section vs GPA']:
-        plotter = gaw.tkMatplot(title='Section vs GPA', window_width=800, window_height=600, x_label='Section', y_label='GPA', plot_type='bar', color='teal', x_plot='UniqueCourseID', y_plot='GPA', df=sectionTable)
-        plotter.plot()
-    
-    if dic.section_analysis_options['Section vs Enrollment']:
-        plotter = gaw.tkMatplot(title='Section vs Enrollment', window_width=800, window_height=600, x_label='Section', y_label='Enrollment', plot_type='scatter', color='teal', x_plot='UniqueCourseID', y_plot='Class Size', df=sectionTable)
-        plotter.plot()
-    
+
+def InstructorAnalysis(
+    df,
+    user_directory,
+    min_enrollments=None,
+    max_enrollments=None,
+    target_values=None,
+    min_sections=None,
+    max_sections=None,
+    csv=False,
+    generate_grade_dist=False,
+):
+    if check_list_is_subset(target_values, uniqueDept):
+        df = df[df["Department"].isin(list(target_values))]
+
+    if check_list_is_subset(target_values, uniqueCrs):
+        df = df[df["CourseTitle"].isin(list(target_values))]
+
+    if check_list_is_subset(target_values, uniqueInst):
+        df = df[df["FacultyID"].isin(list(target_values))]
+
+    instTable = pandas_df_agg(df, "FacultyID")
+    instTable = drop_courses_by_threshold(
+        instTable, "Enrollments", min_enrollments, max_enrollments
+    )
+    instTable = drop_courses_by_threshold(
+        instTable, "Sections", min_sections, max_sections
+    )
+    instTable = instTable.drop_duplicates(subset=["FacultyID"])
+    target_values = instTable["FacultyID"].tolist()
+
     if csv:
-        save_path = os.path.join(user_directory, 'sectionTable.csv')
+        save_path = os.path.join(user_directory, "instTable.csv")
         print("\n\nFile Created:", f" {save_path}\n\n")
-        sectionTable.to_csv(save_path, encoding='utf-8-sig')
+        instTable.to_csv(save_path, encoding="utf-8-sig")
+
+    if generate_grade_dist:
+        graph_grade_distribution(
+            df=instTable,
+            column="FacultyID",
+            target_values=target_values,
+            value_colors=gaw.get_non_red_colors(),
+            user_directory=user_directory,
+            csv=csv,
+        )
+
+    if dic.instructor_analysis_options["Instructor vs GPA"]:
+        plotter = gaw.tkMatplot(
+            title="Instructor vs GPA",
+            window_width=800,
+            window_height=700,
+            x_label="Instructor",
+            y_label="GPA",
+            plot_type="bar",
+            color=gaw.get_random_values(gaw.get_non_red_colors())[0],
+            x_plot="FacultyID",
+            y_plot="GPA",
+            df=instTable,
+        )
+        plotter.plot()
+
+    if dic.instructor_analysis_options["Instructor vs Enrollment"]:
+        plotter = gaw.tkMatplot(
+            title="Instructor vs Enrollment",
+            window_width=800,
+            window_height=700,
+            x_label="Instructor",
+            y_label="Enrollment",
+            plot_type="scatter",
+            color=gaw.get_random_values(gaw.get_non_red_colors())[0],
+            x_plot="FacultyID",
+            y_plot="Enrollments",
+            df=instTable,
+        )
+        plotter.plot()
+
+    if dic.instructor_analysis_options["Course(By Instructor) vs GPA"]:
+        plotter = gaw.tkMatplot(
+            title="Course(By Instructor) vs GPA",
+            window_width=800,
+            window_height=700,
+            x_label="Course",
+            y_label="GPA",
+            plot_type="bar",
+            color=gaw.get_random_values(gaw.get_non_red_colors())[0],
+            x_plot="CourseTitle",
+            y_plot="GPA",
+            df=instTable,
+        )
+        plotter.plot()
+
+    if dic.instructor_analysis_options["Instructor vs Section #"]:
+        plotter = gaw.tkMatplot(
+            title="Instructor vs Section #",
+            window_width=800,
+            window_height=700,
+            x_label="Instructor",
+            y_label="Sections",
+            plot_type="scatter",
+            color=gaw.get_random_values(gaw.get_non_red_colors())[0],
+            x_plot="FacultyID",
+            y_plot="Sections",
+            df=instTable,
+        )
+        plotter.plot()
+
+    if dic.instructor_analysis_options["Instructor vs Course #"]:
+        plotter = gaw.tkMatplot(
+            title="Instructor vs Course #",
+            window_width=800,
+            window_height=700,
+            x_label="Instructor",
+            y_label="Courses",
+            plot_type="bar",
+            color=gaw.get_random_values(gaw.get_non_red_colors())[0],
+            x_plot="FacultyID",
+            y_plot="Courses",
+            df=instTable,
+        )
+        plotter.plot()
+
+    if dic.instructor_analysis_options["Instructor vs Standard Deviation"]:
+        plotter = gaw.tkMatplot(
+            title="Instructor vs Standard Deviation",
+            window_width=800,
+            window_height=700,
+            x_label="Instructor",
+            y_label="Standard Deviation",
+            plot_type="bar",
+            color=gaw.get_random_values(gaw.get_non_red_colors())[0],
+            x_plot="FacultyID",
+            y_plot="stddev",
+            df=instTable,
+        )
+        plotter.plot()
+
+    if dic.instructor_analysis_options["GPA vs Enrollment"]:
+        plotter = gaw.tkMatplot(
+            title="GPA vs Enrollment for Instructors",
+            window_width=800,
+            window_height=700,
+            x_label="Average GPA",
+            y_label="Enrollment",
+            plot_type="scatter",
+            color=gaw.get_random_values(gaw.get_non_red_colors())[0],
+            x_plot="GPA",
+            y_plot="Enrollments",
+            df=instTable,
+        )
+        plotter.plot()
+
+        dic.reset_all_false()
+
+
+def MajorAnalysis(
+    df,
+    user_directory,
+    min_enrollments=None,
+    max_enrollments=None,
+    min_sections=None,
+    max_sections=None,
+    csv=False,
+    target_values=None,
+    generate_grade_dist=False,
+):
+    mjrTable = pandas_df_agg(df, "Major")
+    mjrTable = drop_courses_by_threshold(
+        mjrTable, "Enrollments", min_enrollments, max_enrollments
+    )
+    mjrTable = drop_courses_by_threshold(
+        mjrTable, "Sections", min_sections, max_sections
+    )
+
+    mjrTable.loc[0, "Major"] = "Undefined"
+
+    mjrTable = mjrTable[mjrTable["Major"].isin(target_values)]
+
+    if dic.major_analysis_options["Major vs GPA"]:
+        plotter = gaw.tkMatplot(
+            title="Major vs GPA",
+            window_width=800,
+            window_height=700,
+            x_label="Major",
+            y_label="GPA",
+            plot_type="bar",
+            color=gaw.get_random_values(gaw.get_non_red_colors())[0],
+            x_plot="Major",
+            y_plot="GPA",
+            df=mjrTable,
+        )
+        plotter.plot()
+
+    if dic.major_analysis_options["Major vs Enrollment"]:
+        plotter = gaw.tkMatplot(
+            title="Major vs Enrollment",
+            window_width=800,
+            window_height=700,
+            x_label="Major",
+            y_label="Enrollment",
+            plot_type="scatter",
+            color="teal",
+            x_plot="Major",
+            y_plot="Enrollments",
+            df=mjrTable,
+        )
+        plotter.plot()
+
+    if dic.major_analysis_options["Major vs Section #"]:
+        plotter = gaw.tkMatplot(
+            title="Major vs Section #",
+            window_width=800,
+            window_height=700,
+            x_label="Major",
+            y_label="Sections",
+            plot_type="scatter",
+            color=gaw.get_random_values(gaw.get_non_red_colors())[0],
+            x_plot="Major",
+            y_plot="Sections",
+            df=mjrTable,
+        )
+        plotter.plot()
+
+    if dic.major_analysis_options["Major vs Course #"]:
+        plotter = gaw.tkMatplot(
+            title="Major vs Course #",
+            window_width=800,
+            window_height=700,
+            x_label="Major",
+            y_label="Courses",
+            plot_type="bar",
+            color=gaw.get_random_values(gaw.get_non_red_colors())[0],
+            x_plot="Major",
+            y_plot="Courses",
+            df=mjrTable,
+        )
+        plotter.plot()
+
+    if dic.major_analysis_options["Standard Deviation vs Enrollment"]:
+        plotter = gaw.tkMatplot(
+            title="Standard Deviation vs Enrollment",
+            window_width=800,
+            window_height=700,
+            x_label="Standard Deviation",
+            y_label="Enrollment",
+            plot_type="scatter",
+            color=gaw.get_random_values(gaw.get_non_red_colors())[0],
+            x_plot="stddev",
+            y_plot="Enrollments",
+            df=mjrTable,
+        )
+        plotter.plot()
+
+    if generate_grade_dist:
+        graph_grade_distribution(
+            df=mjrTable,
+            column="Major",
+            target_values=target_values,
+            value_colors=gaw.get_non_red_colors(),
+            user_directory=user_directory,
+            csv=csv,
+        )
+
+    if csv:
+        save_path = os.path.join(user_directory, "majorTable.csv")
+        print("\n\nFile Created:", f" {save_path}\n\n")
+        mjrTable.to_csv(save_path, encoding="utf-8-sig")
+
+    dic.reset_all_false()
+
+
+
+def pandas_df_agg(df, index=["Major"]):
+    # Ensure index is a list
+    if isinstance(index, str):
+        index = [index]
+
+    df_enrollments = (
+        df.groupby(index)["SID"].nunique().reset_index(name="Enrollments")
+    )
+
+    df_agg = (
+        df.groupby(index)
+        .agg(
+            Sections=("UniqueCourseID", "nunique"),
+            Courses=("CourseTitle", "nunique"),
+            GPA=("FinNumericGrade", "mean"),
+            # GPAW=('FinNumericGrade', lambda x: np.average(x, weights=df.loc[x.index, 'CredHrs'])),
+            stddev=("FinNumericGrade", "std"),
+            kurtosis=("FinNumericGrade", lambda x: x.kurt()),
+            skewness=("FinNumericGrade", lambda x: x.skew()),
+        )
+        .reset_index()
+    )
+
+    df_grade = grade_distribution_df(df, index)
+
+    df_final = pd.merge(df_enrollments, df_agg, on=index)
+    df_final = pd.merge(df_final, df_grade, on=index)
+
+    float_cols = df_final.select_dtypes(include="float").columns
+
+    df_final[float_cols] = df_final[float_cols].round(3)
+
+    return df_final
+
+
+def section_analysis(
+    df,
+    user_directory,
+    target_courses,
+    csv=False,
+    min_enrollments=None,
+    max_enrollments=None,
+    min_sections=None,
+    max_sections=None,
+    generate_grade_dist=False,
+):
+    target_courses = list(target_courses)
+    # sectionTable = gpa_by_section(df, target_courses)
+    sectionTable = pandas_df_agg(df, "UniqueCourseID")
+    sectionTable = pd.merge(
+        sectionTable,
+        df[["UniqueCourseID", "CourseTitle"]],
+        on="UniqueCourseID",
+        how="left",
+    )
+
+    sectionTable = sectionTable.drop_duplicates(subset=["UniqueCourseID"])
+    sectionTable = sectionTable[sectionTable["CourseTitle"].isin(target_courses)]
+    sectionTable = drop_courses_by_threshold(
+        sectionTable, "ClassSize", min_enrollments, max_enrollments
+    )
+    sectionTable = drop_courses_by_threshold(
+        sectionTable, "semyear", min_sections, max_sections
+    )
+
+    sectionTable = sectionTable.drop("Sections", axis=1)
+    sectionTable = sectionTable.drop("Courses", axis=1)
+
+    if dic.section_analysis_options["Section vs GPA"]:
+        plotter = gaw.tkMatplot(
+            title="Section vs GPA",
+            window_width=800,
+            window_height=700,
+            x_label="Section",
+            y_label="GPA",
+            plot_type="line",
+            color=gaw.get_random_values(gaw.get_non_red_colors())[0],
+            x_plot="UniqueCourseID",
+            y_plot="GPA",
+            df=sectionTable,
+        )
+        plotter.plot()
+
+    if dic.section_analysis_options["Section vs Class Size"]:
+        plotter = gaw.tkMatplot(
+            title="Section vs Class Size",
+            window_width=800,
+            window_height=700,
+            x_label="Section",
+            y_label="Enrollment",
+            plot_type="scatter",
+            color=gaw.get_random_values(gaw.get_non_red_colors())[0],
+            x_plot="UniqueCourseID",
+            y_plot="Enrollments",
+            df=sectionTable,
+        )
+        plotter.plot()
+
+    if dic.section_analysis_options["GPA vs Class Size"]:
+        plotter = gaw.tkMatplot(
+            title="GPA vs ClassSize per section",
+            window_width=800,
+            window_height=700,
+            x_label="GPA",
+            y_label="Class Size",
+            plot_type="scatter",
+            color=gaw.get_random_values(gaw.get_non_red_colors())[0],
+            x_plot="GPA",
+            y_plot="Enrollments",
+            df=sectionTable,
+        )
+        plotter.plot()
+
+    elif dic.section_analysis_options["Section vs Standard Deviation"]:
+        plotter = gaw.tkMatplot(
+            title="Section vs Standard Deviation",
+            window_width=800,
+            window_height=700,
+            x_label="Section",
+            y_label="Standard Deviation",
+            plot_type="bar",
+            color=gaw.get_random_values(gaw.get_non_red_colors())[0],
+            x_plot="UniqueCourseID",
+            y_plot="stddev",
+            df=sectionTable,
+        )
+        plotter.plot()
+
+    elif dic.section_analysis_options["Enrollment vs Standard Deviation"]:
+        plotter = gaw.tkMatplot(
+            title="Enrollment vs Standard Deviation",
+            window_width=800,
+            window_height=700,
+            x_label="Enrollment",
+            y_label="Standard Deviation",
+            plot_type="scatter",
+            color=gaw.get_random_values(gaw.get_non_red_colors())[0],
+            x_plot="Enrollments",
+            y_plot="stddev",
+            df=sectionTable,
+        )
+        plotter.plot()
+
+    if csv:
+        save_path = os.path.join(user_directory, "sectionTable.csv")
+        print("\n\nFile Created:", f" {save_path}\n\n")
+        sectionTable.to_csv(save_path, encoding="utf-8-sig")
+
+    if generate_grade_dist:
+        graph_grade_distribution(
+            df=sectionTable,
+            column="UniqueCourseID",
+            target_values=target_courses,
+            value_colors=gaw.get_random_values(gaw.get_non_red_colors()),
+            user_directory=user_directory,
+            csv=csv,
+        )
 
     for key in dic.section_analysis_options.keys():
         dic.section_analysis_options[key] = False
 
 
-# # gpa vs major size (number of enrollments) scatter plot for majors with > 10,000 enrollments
-# def MjrGPATrunc(df, user_directory, min_enrollments = None, max_enrollments = None, csv = False):
-#     mjrTable = pd.read_csv('majorTable.csv')
-#     mjrTable.sort_values('Enrollments', inplace=True)
-    
-#     mjrTable = drop_values_by_threshold(mjrTable, 'Enrollments', min_enrollments, max_enrollments)
+def CourseAnalysis(
+    df,
+    user_directory,
+    min_enrollments=None,
+    target_values=None,
+    max_enrollments=None,
+    min_sections=None,
+    max_sections=None,
+    csv=False,
+    generate_grade_dist=False,
+):
 
-#     if csv:
-#         save_path = os.path.join(user_directory, 'mjrvsmjrsize.csv')
-#         print("\n\nFile Created:", f" {save_path}\n\n")
-#         mjrTable.to_csv(save_path, encoding='utf-8-sig')
+    if check_list_is_subset(target_values, uniqueDept):
+        df = df[df["Department"].isin(list(target_values))]
 
+    if check_list_is_subset(target_values, uniqueCrs):
+        df = df[df["CourseTitle"].isin(list(target_values))]
 
-#     mjrTable.reset_index()
-#     mj = mjrTable.plot.scatter(
-#         x='Enrollments', y='GPA W', figsize=(10, 5), color='#e08114', s=50)
-#     mj.set_xlabel("Major Enrollments")
-#     mj.set_ylabel("Weighted GPA")
-#     mj.yaxis.grid()
-#     save_path = os.path.join(user_directory, 'MjrAvgScatTrunc.jpg')
-#     print("\n\nFile Created:", f" {save_path}\n\n")
+    crsTable = pandas_df_agg(df, "CourseTitle")
+    crsTable = drop_courses_by_threshold(
+        crsTable, "Enrollments", min_enrollments, max_enrollments
+    )
+    crsTable = drop_courses_by_threshold(
+        crsTable, "Sections", min_sections, max_sections
+    )
 
-#     plt.savefig(save_path, bbox_inches='tight')
+    target_values = crsTable["CourseTitle"].tolist()
 
-# # major vs enrollments bar chart, for majors with > 10,000 enrollments
-# def MjrEnroll(df, user_directory, min_enrollments = None, max_enrollments = None, csv = False):
-#     mjrTable = pd.read_csv('majorTable.csv')
-#     mjrTable.sort_values('Enrollments', inplace=True)
-    
-#     mjrTable = drop_values_by_threshold(mjrTable, 'Enrollments', min_enrollments, max_enrollments)
-
-#     if csv:
-#         save_path = os.path.join(user_directory, 'mjrvsenroll.csv')
-#         print("\n\nFile Created:", f" {save_path}\n\n")
-#         mjrTable.to_csv(save_path, encoding='utf-8-sig')
-
-#     mjrTable.reset_index()
-#     mj = mjrTable.plot.bar(x='Major', y='Enrollments', figsize=(
-#         15, 5), color='#f5a142', legend=False)
-#     mj.set_xlabel("Majors")
-#     mj.set_ylabel("Enrollments")
-#     mj.yaxis.grid()
-
-    
-#     save_path = os.path.join(user_directory, 'MjrEnrolBarTrunc.jpg')
-#     print("\n\nFile Created:", f" {save_path}\n\n")
-
-#     plt.savefig(save_path, bbox_inches='tight')
-
-
-def CourseGPA(df, user_directory, min_enrollments=None, max_enrollments=None, min_sections=None, max_sections=None, csv=False):
-    crsTable = pd.read_csv('courseTable.csv')
-    crsTable.sort_values('GPA W', inplace=True)
-    crsTable = drop_values_by_threshold(crsTable, 'Enrollments', min_enrollments, max_enrollments)
-    crsTable = drop_values_by_threshold(crsTable, 'Sections', min_sections, max_sections)
-
-    if dic.course_analysis_options['GPA vs Course']:
-        plotter = gaw.tkMatplot(title='GPA vs Course', window_width=800, window_height=600, x_label='Course', y_label='GPA', plot_type='bar', color='teal', x_plot='Course', y_plot='GPA W', df=crsTable)
+    if dic.course_analysis_options["Course vs GPA"]:
+        plotter = gaw.tkMatplot(
+            title="Course vs GPA",
+            window_width=800,
+            window_height=700,
+            x_label="Course",
+            y_label="GPA",
+            plot_type="bar",
+            color=gaw.get_random_values(gaw.get_non_red_colors())[0],
+            x_plot="CourseTitle",
+            y_plot="GPA",
+            df=crsTable,
+        )
         plotter.plot()
 
-    elif dic.course_analysis_options['Enrollment vs Course']:
-        plotter = gaw.tkMatplot(title='Enrollments vs Course', window_width=800, window_height=600, x_label='Course', y_label='Enrollments', plot_type='scatter', color='teal', x_plot='Course', y_plot='Enrollments', df=crsTable)
-        plotter.plot()
-    
-    elif dic.course_analysis_options['GPA vs Section']:
-        plotter = gaw.tkMatplot(title='GPA vs Section', window_width=800, window_height=600, x_label='GPA W', y_label='Sections', plot_type='scatter', color='teal', x_plot='GPA W', y_plot='Sections', df=crsTable)
+    elif dic.course_analysis_options["Course vs Enrollment"]:
+        plotter = gaw.tkMatplot(
+            title="Course vs Enrollment",
+            window_width=800,
+            window_height=700,
+            x_label="Course",
+            y_label="Enrollments",
+            plot_type="scatter",
+            color=gaw.get_random_values(gaw.get_non_red_colors())[0],
+            x_plot="CourseTitle",
+            y_plot="Enrollments",
+            df=crsTable,
+        )
         plotter.plot()
 
-    elif dic.course_analysis_options['Enrollments vs. Department']:
-        department_enrollments = crsTable.groupby('Department')['Enrollments'].sum().reset_index()
-        plotter = gaw.tkMatplot(title='Enrollments vs. Department', window_width=800, window_height=600, x_label='Department', y_label='Enrollments', plot_type='bar', color='teal', x_plot='Department', y_plot='Enrollments', df=department_enrollments)
+    elif dic.course_analysis_options["Course vs Section #"]:
+        plotter = gaw.tkMatplot(
+            title="GPA vs Section",
+            window_width=800,
+            window_height=700,
+            x_label="Course",
+            y_label="Sections",
+            plot_type="scatter",
+            color=gaw.get_random_values(gaw.get_non_red_colors())[0],
+            x_plot="CourseTitle",
+            y_plot="Sections",
+            df=crsTable,
+        )
         plotter.plot()
-    
-    elif dic.course_analysis_options['GPA vs. Department']:
-        department_gpa = crsTable.groupby('Department')['GPA W'].mean().reset_index()
-        plotter = gaw.tkMatplot(title='GPA vs. Department', window_width=800, window_height=600, x_label='Department', y_label='GPA', plot_type='bar', color='teal', x_plot='Department', y_plot='GPA W', df=department_gpa)
+
+    elif dic.course_analysis_options["Enrollment vs GPA"]:
+        plotter = gaw.tkMatplot(
+            title="Enrollment vs GPA",
+            window_width=800,
+            window_height=700,
+            x_label="Enrollment",
+            y_label="GPA",
+            plot_type="scatter",
+            color=gaw.get_random_values(gaw.get_non_red_colors())[0],
+            x_plot="Enrollments",
+            y_plot="GPA",
+            df=crsTable,
+        )
+        plotter.plot()
+
+    elif dic.course_analysis_options["Course vs Standard Deviation"]:
+        plotter = gaw.tkMatplot(
+            title="Course vs Standard Deviation",
+            window_width=800,
+            window_height=700,
+            x_label="Course",
+            y_label="Standard Deviation",
+            plot_type="bar",
+            color=gaw.get_random_values(gaw.get_non_red_colors())[0],
+            x_plot="CourseTitle",
+            y_plot="stddev",
+            df=crsTable,
+        )
+        plotter.plot()
+
+    elif dic.course_analysis_options["GPA vs Standard Deviation"]:
+        plotter = gaw.tkMatplot(
+            title="GPA vs Standard Deviation",
+            window_width=800,
+            window_height=700,
+            x_label="GPA",
+            y_label="Standard Deviation",
+            plot_type="scatter",
+            color=gaw.get_random_values(gaw.get_non_red_colors())[0],
+            x_plot="GPA",
+            y_plot="stddev",
+            df=crsTable,
+        )
         plotter.plot()
 
     if csv:
-        save_path = os.path.join(user_directory, 'crsTableTrunc.csv')
-        crsTable.to_csv(save_path, encoding='utf-8-sig')
+        save_path = os.path.join(user_directory, "crsTableTrunc.csv")
+        crsTable.to_csv(save_path, encoding="utf-8-sig")
         print("\n\nFile Created:", f" {save_path}\n\n")
 
-    for key in dic.course_analysis_options.keys():
-        dic.course_analysis_options[key] = False
+    if generate_grade_dist:
+        graph_grade_distribution(
+            df=crsTable,
+            target_values=target_values,
+            column="CourseTitle",
+            value_colors=gaw.get_random_values(gaw.get_non_red_colors()),
+            user_directory=user_directory,
+            csv=csv,
+        )
+
+        dic.reset_all_false()
 
 
 
 ## Should we use enrollment threshold for class size?
 
 
-def Level_Inflation(df, user_directory, show_plot = False, csv = False, min_enrollments=None, max_enrollments=None):
+def student_level_analysis(
+    df,
+    user_directory,
+    csv=False,
+    min_enrollments=None,
+    max_enrollments=None,
+    generate_grade_dist=False,
+):
+    df = drop_courses_by_threshold(df, "ClassSize", min_enrollments, max_enrollments)
 
-    df = drop_values_by_threshold(df, 'ClassSize', min_enrollments, max_enrollments)
+    df["StudentLevel"] = df["StudentLevel"].apply(
+        lambda x: (
+            "Freshman" if x in ["Continuing Freshman", "First-Time Freshman"] else x
+        )
+    )
 
-    df['CombinedStudentLevel'] = df['StudentLevel'].apply(lambda x: 'Freshman' if x in ['Continuing Freshman', 'First-Time Freshman'] else x)
-    gpa = df.groupby('CombinedStudentLevel')['FinNumericGrade'].mean().reset_index()
-    gpa.rename(columns={'FinNumericGrade':'Average GPA'}, inplace=True)
-    gpa.rename(columns={'CombinedStudentLevel':'Student Level'}, inplace=True)
 
-    ## Custom Sort Student Levels
-    level = ['Unclassified', 'Freshman', 'Sophomores', 'Juniors', 'Seniors', 'Graduate Students']
-    gpa['Student Level'] = pd.Categorical(gpa['Student Level'], categories=level)
-    gpa.sort_values(by = 'Student Level', inplace=True)
-    gpa.reset_index(drop=True, inplace=True)
+    df['StudentLevel'] = df['StudentLevel'].apply(lambda x: "Unknown" if pd.isna(x) or x == "" else x)
 
-    print(gpa)
-    print("")
-    
-    plotter = gaw.tkMatplot(title='Average GPA vs Student Level', window_width=800, window_height=600, x_label='Student Level', y_label='Average GPA', plot_type='bar', color='teal', x_plot='Student Level', y_plot='Average GPA', df=gpa)
-    plotter.plot()
-    
+
+    df_agg = pandas_df_agg(df, "StudentLevel")
+
+    if dic.studentlevel_analysis_options["Student Level vs Enrollments"]:
+        plotter = gaw.tkMatplot(
+            title="Student Level vs Enrollment",
+            window_width=800,
+            window_height=700,
+            x_label="Student Level",
+            y_label="Enrollment",
+            plot_type="bar",
+            color=gaw.get_random_values(gaw.get_non_red_colors())[0],
+            x_plot="StudentLevel",
+            y_plot="Enrollments",
+            df=df_agg,
+        )
+        plotter.plot()
+
+    if dic.studentlevel_analysis_options["Student Level vs GPA"]:
+        plotter = gaw.tkMatplot(
+            title="Student Level vs GPA",
+            window_width=800,
+            window_height=700,
+            x_label="Student Level",
+            y_label="GPA",
+            plot_type="bar",
+            color=gaw.get_random_values(gaw.get_non_red_colors())[0],
+            x_plot="StudentLevel",
+            y_plot="GPA",
+            df=df_agg,
+        )
+        plotter.plot()
+
+    if dic.studentlevel_analysis_options["Student Level vs Courses"]:
+        plotter = gaw.tkMatplot(
+            title="Student Level vs Courses",
+            window_width=800,
+            window_height=700,
+            x_label="Student Level",
+            y_label="Courses",
+            plot_type="bar",
+            color=gaw.get_random_values(gaw.get_non_red_colors())[0],
+            x_plot="StudentLevel",
+            y_plot="Courses",
+            df=df_agg,
+        )
+        plotter.plot()
+
+    if generate_grade_dist:
+        graph_grade_distribution(
+            df=df_agg,
+            column="StudentLevel",
+            target_values=df_agg["StudentLevel"].unique(),
+            value_colors=gaw.get_non_red_colors(),
+            user_directory=user_directory,
+            csv=csv,
+        )
+
+
     if csv:
-        save_path = os.path.join(user_directory, 'lvlInflation.csv')
-        gpa.to_csv(save_path, encoding='utf-8-sig')
+        save_path = os.path.join(user_directory, "student_level_analysis.csv")
+        df.to_csv(save_path, encoding="utf-8-sig")
         print("\n\nFile Created:", f" {save_path}\n\n")
 
+    dic.reset_all_false()
 
-def sort_values(value):
-    if value >= 1000 and value <2000:
-        return '1000'
-    elif value >= 2000 and value < 3000:
-        return '2000'
-    elif value >= 3000 and value < 4000:
-        return '3000'
-    elif value >= 4000:
-        return '4000'
-    elif value <= 1000:
+
+
+def sort_courses(course):
+    if course >= 1000 and course < 2000:
+        return "1000"
+    elif course >= 2000 and course < 3000:
+        return "2000"
+    elif course >= 3000 and course < 4000:
+        return "3000"
+    elif course >= 4000:
+        return "4000"
+    elif course <= 1000:
         return "Beginner"
 
 
-def CourseLevelGrade(df, user_directory, heatmap = False, min_enrollments = None, max_enrollments = None ,csv = False):
+def course_level_analysis(
+    df,
+    user_directory,
+    min_enrollments=None,
+    max_enrollments=None,
+    csv=False,
+    generate_grade_dist=False,
+):
+    df = drop_courses_by_threshold(df, "ClassSize", min_enrollments, max_enrollments)
 
-    df = drop_values_by_threshold(df, 'ClassSize', min_enrollments, max_enrollments)
+    df["CourseLevel"] = df["CourseNum"].apply(sort_courses)
 
-    df['CombinedStudentLevel'] = df['StudentLevel'].apply(lambda x: 'Freshman' if x in ['Continuing Freshman', 'First-Time Freshman'] else x)
+    df_agg = pandas_df_agg(df, "CourseLevel")
 
-    df['Course Level'] = df ['CourseNum'].apply(sort_values)
-    
-    gpa = df[~(df['Course Level'] == 'Beginner')].groupby(['CombinedStudentLevel', 'Course Level'])['FinNumericGrade'].mean().reset_index()
-    gpa.rename(columns={'FinNumericGrade':'Average GPA'}, inplace=True)
-    gpa.rename(columns={'CombinedStudentLevel':'Student Level'}, inplace=True)
-    
-    gpa['Average GPA'] = gpa['Average GPA'].round(3)
-    
-    ## Custom Sort Student Levels
-    level = ['Unclassified', 'Freshman', 'Sophomores', 'Juniors', 'Seniors', 'Graduate Students']
-    gpa['Student Level'] = pd.Categorical(gpa['Student Level'], categories=level)
-    gpa.sort_values(by =['Student Level', 'Course Level'], inplace=True)
-    gpa.reset_index(drop=True, inplace=True)
-    
-    
-    pivot = np.round(pd.pivot_table(gpa, index= 'Student Level', columns='Course Level', values='Average GPA', aggfunc='mean', margins=True, margins_name='Total'),3)    
+    if dic.courselevel_analysis_options["Course Level vs Course #"]:
+        plotter = gaw.tkMatplot(
+            title="Course Level vs Num. Courses",
+            window_width=800,
+            window_height=700,
+            x_label="Course Level",
+            y_label="Courses #",
+            plot_type="bar",
+            color=gaw.get_random_values(gaw.get_non_red_colors())[0],
+            x_plot="CourseLevel",
+            y_plot="Courses",
+            df=df_agg,
+        )
+        plotter.plot()
 
-    if heatmap:
-        heatmap = pivot
-        heatmap = heatmap.drop('Total', axis=0)
-        heatmap = heatmap.drop('Total', axis=1)
+    if dic.courselevel_analysis_options["Course Level vs GPA"]:
+        plotter = gaw.tkMatplot(
+            title="Course Level vs Avg GPA",
+            window_width=800,
+            window_height=700,
+            x_label="Course Level",
+            y_label="GPA",
+            plot_type="bar",
+            color=gaw.get_random_values(gaw.get_non_red_colors())[0],
+            x_plot="CourseLevel",
+            y_plot="GPA",
+            df=df_agg,
+        )
+        plotter.plot()
 
 
-        data_for_heatmap = heatmap.to_numpy()
+    if dic.courselevel_analysis_options["Course Level vs Enrollments"]:
+        plotter = gaw.tkMatplot(
+            title="Course Level vs Enrollments",
+            window_width=800,
+            window_height=700,
+            x_label="Course Level",
+            y_label="Enrollments",
+            plot_type="bar",
+            color=gaw.get_random_values(gaw.get_non_red_colors())[0],
+            x_plot="CourseLevel",
+            y_plot="Enrollments",
+            df=df_agg,
+        )
+        plotter.plot()
 
-        fig, ax = plt.subplots(figsize=(10, 8))
-
-        cax = ax.imshow(data_for_heatmap, cmap='coolwarm', interpolation='nearest')
-        fig.colorbar(cax)
-        ax.set_xticks(np.arange(len(heatmap.columns)))
-        ax.set_yticks(np.arange(len(heatmap.index)))
-        ax.set_xticklabels(heatmap.columns)
-        ax.set_yticklabels(heatmap.index)
-        plt.xticks(rotation=45)
-        ax.set_xlabel('Course Level')
-        ax.set_ylabel('Student Level')
-        ax.set_title('GPA Heatmap: Student Level vs Course Level')
-
-        plt.savefig(f'{user_directory}/heatmap.pdf', bbox_inches='tight')
-
-        save_path = os.path.join(user_directory, 'heatmap.pdf')
-        print("\n\nFile Created:", f" {save_path}\n\n")
-    
+    if generate_grade_dist:
+        graph_grade_distribution(
+            df=df_agg,
+            column="CourseLevel",
+            target_values=df_agg["CourseLevel"].unique(),
+            value_colors=gaw.get_non_red_colors(),
+            user_directory=user_directory,
+            csv=csv,
+        )
 
     if csv:
-        save_path = os.path.join(user_directory, 'courseLevelGrade.csv')
-        gpa.to_csv(save_path, encoding='utf-8-sig')
+        save_path = os.path.join(user_directory, "course_level_analysis.csv")
+        df_agg.to_csv(save_path, encoding="utf-8-sig")
         print("\n\nFile Created:", f" {save_path}\n\n")
+
+    dic.reset_all_false()
+
+
+def studentCourse_level_analysis(
+    df,
+    user_directory,
+    min_enrollments=None,
+    max_enrollments=None,
+    csv=False,
+):
+    df = drop_courses_by_threshold(df, "ClassSize", min_enrollments, max_enrollments)
+
+    df["StudentLevel"] = df["StudentLevel"].apply(
+        lambda x: (
+            "Freshman" if x in ["Continuing Freshman", "First-Time Freshman"] else x
+        )
+    )
+
+    df["CourseLevel"] = df["CourseNum"].apply(sort_courses)
+
+    df_agg = pandas_df_agg(df, ["StudentLevel", "CourseLevel"])
+
+    if csv:
+        save_path = os.path.join(user_directory, "student_course_level_analysis.csv")
+        df_agg.to_csv(save_path, encoding="utf-8-sig")
+        print("\n\nFile Created:", f" {save_path}\n\n")
+
+    if dic.studentcourse_analysis_options["Student-Course vs GPA"]:
+        pivot = df_agg.pivot_table(index='StudentLevel', columns='CourseLevel', values='GPA', fill_value=0)
+        plt.figure(figsize=(10, 8))
+        sns.heatmap(pivot, annot=True, cmap='coolwarm', fmt=".2f")
+        plt.title('GPA Heatmap: Student Level vs Course Level')
+        plt.xlabel('Course Level')
+        plt.ylabel('Student Level')
+        plt.show()
+
+    if dic.studentcourse_analysis_options["Student-Course vs Enrollment"]:
+        pivot = df_agg.pivot_table(index='StudentLevel', columns='CourseLevel', values='Enrollments', fill_value=0)
+        plt.figure(figsize=(10, 8))
+        sns.heatmap(pivot, annot=True, cmap='coolwarm', fmt=".2f")
+        plt.title('Enrollment Heatmap: Student Level vs Enrollment')
+        plt.xlabel('Course Level')
+        plt.ylabel('Student Level')
+        plt.show()
+
+    dic.reset_all_false()
+
+
+
+
+
+def normalize_rows_by_grade_frequency(df, column, grade_columns):
+
+    for value in df[column].unique():
+        department_grades = df.loc[df[column] == value, grade_columns]
+        total_grades = department_grades.sum(axis=1)
+        df.loc[df[column] == value, grade_columns] = department_grades.div(
+            total_grades, axis=0
+        )
+
+    return df
+
+
+def graph_grade_distribution(
+    df,
+    column,
+    user_directory,
+    csv=False,
+    target_values=None,
+    value_colors=None,
+    cutoff_enrollment=100,
+):
+    if target_values is None:
+        target_values = []
+    if value_colors is None:
+        value_colors = ['blue', 'green', 'red', 'cyan', 'magenta', 'yellow', 'black']
+
+    grades = ["A", "A-", "B+", "B", "B-", "C+", "C", "C-"]
+    value_colors = value_colors[: len(target_values)]
+
+    df = df[df[f"{column}"].isin(target_values)]
+    df = normalize_rows_by_grade_frequency(df, column, grades)
+
+    if csv:
+        save_path = os.path.join(user_directory, f"grade_distribution_{column}.csv")
+        df.to_csv(save_path, encoding="utf-8-sig")
+        print("\n\nFile Created:", f" {save_path}\n\n")
+
+    fig = plt.figure(figsize=(20, 8.5))
+    ax = fig.add_subplot(111)
+
+    scatter_plots = {}  # Dictionary to store scatter plot references and original states
+
+    for i, value in enumerate(target_values):
+        value_df = df[df[f"{column}"] == value]
+        grade_counts = [
+            round(
+                value_df[grade].iloc[0], 4
+            )
+            if (not value_df.empty and grade in value_df.columns)
+            else 0
+            for grade in grades
+        ]
+
+        scatter = ax.scatter(
+            grades,
+            grade_counts,
+            label=f"{value}",
+            color=value_colors[i % len(value_colors)],
+            edgecolors="black",
+            linewidths=1,
+            s=100  # Initial size of the markers
+        )
+        ax.plot(
+            grades,
+            grade_counts,
+            color='black',
+            linewidth=3,
+            linestyle="-",
+        )
+        ax.plot(
+            grades,
+            grade_counts,
+            color=value_colors[i % len(value_colors)],
+            linewidth=1,
+            linestyle="-",
+        )
+        # Store the scatter plot and its original facecolors and sizes
+        scatter_plots[value] = (scatter, {'facecolors': scatter.get_facecolor(), 'sizes': scatter.get_sizes()})
+
+    ax.legend(fontsize='small', loc='best')
+    ax.set_xlabel("Letter Grades", fontsize=12)
+    ax.set_ylabel("Number of Each Grade (normalized)", fontsize=10)
+    ax.set_title("Frequency of Letter Grades", fontsize=14)
+    ax.grid(True)
+
+    root, canvas = create_figure_window(
+        fig, title="Grade Distribution", geometry="1000x700"
+    )
+
+    # Adjusting the Treeview to have an additional "Category" column
+    tree = ttk.Treeview(root)
+    tree["columns"] = ["Category"] + grades
+    tree.column("#0", width=0, stretch=tk.NO)
+    tree.column("Category", anchor=tk.CENTER, width=120)
+    tree.heading("Category", text=column, anchor=tk.CENTER)
+
+    for grade in grades:
+        tree.column(grade, anchor=tk.CENTER, width=80)
+        tree.heading(grade, text=grade, anchor=tk.CENTER)
+
+    for value in target_values:
+        value_df = df[df[f"{column}"] == value]
+        row = [round(value_df[grade].iloc[0], 4) if (not value_df.empty and grade in value_df.columns and not value_df[grade].empty) else 0 for grade in grades]
+        tree.insert("", tk.END, values=(value, *row))
+
+    tree.grid(row=2, column=0, sticky="nsew")
+
+    def on_tree_selection_change(event):
+        selected_items = tree.selection()
+        if selected_items:
+            item = tree.item(selected_items[0])["values"][0]
+            highlight_plot_points(item)
+
+    def clear_highlight():
+        for scatter, original in scatter_plots.values():
+            scatter.set_facecolors(original['facecolors'])
+            scatter.set_sizes(original['sizes'])
+
+    def highlight_plot_points(category):
+        clear_highlight()
+        scatter, original = scatter_plots.get(category, (None, None))
+        if scatter:
+            scatter.set_facecolors("red")
+            scatter.set_sizes([size * 2 for size in original['sizes']])
+        canvas.draw_idle()
+
+    tree.bind("<<TreeviewSelect>>", on_tree_selection_change)
+
+    canvas.draw()
+
+def create_figure_window(fig, window=None, title="Figure Window", geometry="1000x700"):
+    if window is None:
+        root = tk.Tk()
+        root.title(title)
+        root.geometry(geometry)
+    else:
+        root = window
+
+    frame = ttk.Frame(root)
+    frame.grid(row=0, column=0, sticky="nsew")
+
+    canvas = FigureCanvasTkAgg(fig, master=frame)
+    canvas_widget = canvas.get_tk_widget()
+    canvas_widget.grid(row=0, column=0, sticky="nsew")
+
+    toolbar_frame = ttk.Frame(root)
+    toolbar_frame.grid(row=1, column=0, sticky="ew")
+    toolbar = NavigationToolbar2Tk(canvas, toolbar_frame)
+    toolbar.update()
+
+    button_quit = ttk.Button(root, text="Quit", command=root.destroy)
+    button_quit.grid(row=3, column=0, sticky="nsew")
+
+    root.grid_rowconfigure(0, weight=1)
+    root.grid_columnconfigure(0, weight=1)
+    frame.grid_rowconfigure(0, weight=1)
+    frame.grid_columnconfigure(0, weight=1)
+
+    canvas.draw()
+
+    return root, canvas
+
+
+def grade_distribution_df(df, index_col):
+    grades = ["A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D", "F"]
+    df_filtered = df[df["FinLetterGrade"].isin(grades)]
+
+    df_pivot = df_filtered.pivot_table(
+        index=index_col, columns="FinLetterGrade", aggfunc="size", fill_value=0
+    )
+    df_pivot = df_pivot.reset_index()
+
+    df_pivot.columns.name = None
+    for grade in grades:
+        if grade not in df_pivot.columns:
+            df_pivot[grade] = 0
+
+    # This step ensures that the grade columns are in the expected order
+    grade_columns = [grade for grade in grades if grade in df_pivot.columns]
+    other_columns = [col for col in df_pivot.columns if col not in grade_columns]
+    ordered_columns = other_columns + grade_columns
+    df_pivot = df_pivot[ordered_columns]
+
+    return df_pivot
+
+
+def piechart_df_columns(df, col_values, col_labels):
+    df = drop_courses_by_threshold(df, "TrueClassSize", 1000)
+
+    sizes = df[col_values].tolist()
+    labels = df[col_labels].tolist()
+
+    fig, ax = plt.subplots(figsize=(10, 7), subplot_kw=dict(aspect="equal"))
+
+    wedges, texts = ax.pie(sizes, startangle=90, wedgeprops=dict(width=0.5))
+
+    bbox_props = dict(boxstyle="square,pad=0.3", fc="w", ec="k", lw=0.72)
+    kw = dict(arrowprops=dict(arrowstyle="-"), bbox=bbox_props, zorder=0, va="center")
+
+    for i, p in enumerate(wedges):
+        ang = (p.theta2 - p.theta1) / 2.0 + p.theta1
+        y = np.sin(np.deg2rad(ang))
+        x = np.cos(np.deg2rad(ang))
+        horizontalalignment = {-1: "right", 1: "left"}[int(np.sign(x))]
+        connectionstyle = f"angle,angleA=0,angleB={ang}"
+        kw["arrowprops"].update({"connectionstyle": connectionstyle})
+        ax.annotate(
+            labels[i],
+            xy=(x, y),
+            xytext=(1.35 * np.sign(x), 1.4 * y),
+            horizontalalignment=horizontalalignment,
+            **kw,
+        )
+
+    _, canvas = create_figure_window(fig, title="Pie Chart", geometry="1000x700")
+
+    return _, canvas
+
+
+def normalize_dataframe_column(dataframe, column, normalization_type):
+    if column not in dataframe.columns:
+        print(f"Column '{column}' not found in the dataframe.")
+        return
+
+    normalization_functions = {
+        "minmax": lambda x: MinMaxScaler().fit_transform(x),
+        "zscore": lambda x: StandardScaler().fit_transform(x),
+        "robust": lambda x: RobustScaler().fit_transform(x),
+        "maxabs": lambda x: MaxAbsScaler().fit_transform(x),
+        "log": lambda x: np.log(
+            x - np.min(x) + 1
+        ),  # Log scaling with shift to handle non-positive values
+    }
+
+    if normalization_type in normalization_functions:
+        # Normalize the column and add the normalized column to the dataframe
+        scaled_data = normalization_functions[normalization_type](dataframe[[column]])
+        dataframe[f"{normalization_type}Normalized{column}"] = (
+            scaled_data.squeeze()
+        )  # Use squeeze to ensure correct dimensionality
+    else:
+        print(f"Normalization type '{normalization_type}' is not supported.")

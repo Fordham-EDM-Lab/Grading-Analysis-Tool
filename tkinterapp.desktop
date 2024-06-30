@@ -1,0 +1,9 @@
+
+[Desktop Entry]
+Name=Grading Analysis Tool
+Exec=/home/mariom/Work/EDMLab/"Grading Analysis"/.venv/bin/python3 /home/mariom/Work/EDMLab/"Grading Analysis"/gradeAnalysisGUI.py
+Icon=/home/mariom/Work/EDMLab/"Grading Analysis"/Athletic_Logo_Block_F.png
+Type=Application
+Categories=Utility;
+NoDisplay=False
+

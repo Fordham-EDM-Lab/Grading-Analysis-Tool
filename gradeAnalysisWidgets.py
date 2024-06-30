@@ -7,29 +7,117 @@ import platform
 import numpy as np
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationToolbar2Tk)
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from tkinter.filedialog import asksaveasfilename
+from pandas.core.base import NoNewAttributesMixin
+from ttkwidgets import autocomplete
 import os
 import subprocess
+import matplotlib.colors as mcolors
+import random
+import seaborn
+from matplotlib.backend_bases import MouseButton
+from sklearn.preprocessing import (
+    StandardScaler,
+    MinMaxScaler,
+    RobustScaler,
+    MaxAbsScaler,
+    Normalizer,
+)
+from matplotlib.backend_bases import MouseButton
+import pandas as pd
+import tkinter.scrolledtext as tkst
+from functools import partial
+
+
+
+##For matplotlib uses
+def get_non_red_colors():
+    css4_colors = mcolors.CSS4_COLORS
+
+    non_red_or_seaborn_colors = [
+        name for name, hex in css4_colors.items() if "red" not in name.lower()
+    ]
+
+    return non_red_or_seaborn_colors
+
+
+def get_non_red_colors_name_hex():
+    css4_colors = mcolors.CSS4_COLORS
+
+    non_red_colors = {
+        name: hex for name, hex in css4_colors.items() if "red" not in name.lower()
+    }
+
+    return non_red_colors
+
+
+def get_nonseaborn_styles():
+    plot_styles = plt.style.available
+
+    non_seaborn_styles = [
+        color for color in plot_styles if "seaborn" not in color.lower()
+    ]
+
+    return non_seaborn_styles
+
+
+def get_random_values(input_list, number_of_values=7):
+    if len(input_list) < number_of_values:
+        raise ValueError(
+            f"Input list must contain at least {number_of_values} elements."
+        )
+
+    return random.sample(input_list, number_of_values)
+
+
+def normalize_dataframe_column(dataframe, column, normalization_type):
+    if column not in dataframe.columns:
+        print(f"Column '{column}' not found in the dataframe.")
+        return
+    
+    print(f"Normalizing column '{column}' using '{normalization_type}' method.")
+
+    normalization_functions = {
+        "minmax": lambda x: MinMaxScaler().fit_transform(x),
+        "zscore": lambda x: StandardScaler().fit_transform(x),
+        "robust": lambda x: RobustScaler().fit_transform(x),
+        "maxabs": lambda x: MaxAbsScaler().fit_transform(x),
+        "log": lambda x: np.log(
+            x - np.min(x) + 1
+        ),  # Log scaling with shift to handle non-positive values
+    }
+
+    if normalization_type in normalization_functions:
+        # Normalize the column and add the normalized column to the dataframe
+        scaled_data = normalization_functions[normalization_type](dataframe[[column]])
+        dataframe[f"{normalization_type}Normalized{column}"] = (
+            scaled_data.squeeze()
+        )  # Use squeeze to ensure correct dimensionality
+    else:
+        print(f"Normalization type '{normalization_type}' is not supported.")
+
 
 class Logger(logging.Logger):
     _file_handler_created = False  # Class-level attribute
 
-    def __init__(self, name, level=logging.DEBUG, log_file='.log.log'):
+    def __init__(self, name, level=logging.DEBUG, log_file=".log.log"):
         super().__init__(name, level)
 
         stream_handler = logging.StreamHandler()
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s', 
-                                            datefmt='%m/%d/%Y, [%H:%M:%S]')
+        formatter = logging.Formatter(
+            "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+            datefmt="%m/%d/%Y, [%H:%M:%S]",
+        )
         stream_handler.setFormatter(formatter)
         self.addHandler(stream_handler)
 
         if not Logger._file_handler_created:
-            file_handler = logging.FileHandler(log_file, mode='w')
+            file_handler = logging.FileHandler(log_file, mode="w")
             Logger._file_handler_created = True
         else:
-            #Subsequent logger instances should append to the file
-            file_handler = logging.FileHandler(log_file, mode='a')
+            # Subsequent logger instances should append to the file
+            file_handler = logging.FileHandler(log_file, mode="a")
 
         file_handler.setFormatter(formatter)
         self.addHandler(file_handler)
@@ -51,14 +139,19 @@ class Logger(logging.Logger):
     def critical(self, message):
         self.log(logging.CRITICAL, message)
 
+
 class ConfirmButton:
     def __init__(self):
         self.logger = Logger(__name__)  # Create a logger using the custom Logger class
         self.confirm_button = None
         self.logger.info("ConfirmButton instance initialized")
 
-    def make_confirm_button(self, where, title="Confirm", command=None, row=int, column=int, helptip=""):
-        self.logger.info(f"Creating confirm button titled '{title}' at row {row}, column {column}")
+    def make_confirm_button(
+        self, where, title="Confirm", command=None, row=int, column=int, helptip=""
+    ):
+        self.logger.info(
+            f"Creating confirm button titled '{title}' at row {row}, column {column}"
+        )
         self.confirm_button = tk.Button(where, text=title, command=command)
         self.confirm_button.grid(row=row, column=column)
         self.bind_tooltip_events(self.confirm_button, helptip)
@@ -71,11 +164,14 @@ class ConfirmButton:
         self.logger.info("Confirm button destroyed")
 
     def bind_tooltip_events(self, widget, text):
-        self.logger.debug(f"Binding tooltip events to widget with tooltip text: '{text}'")
+        self.logger.debug(
+            f"Binding tooltip events to widget with tooltip text: '{text}'"
+        )
         tooltip = ToolTip(widget, text)
         widget.bind("<Enter>", lambda event: tooltip.showtip())
         widget.bind("<Leave>", lambda event: tooltip.hidetip())
         self.logger.debug("Tooltip events bound successfully")
+
 
 class TableWidget:
     def __init__(self):
@@ -83,15 +179,21 @@ class TableWidget:
         self.table = None
         self.logger.info("TableWidget instance initialized")
 
-    def generic_tableview_widget(self, where, row=int, column=int, title="", colHeading="", helptip=""):
-        self.logger.info(f"Creating table view widget titled '{title}' with columns '{colHeading}' at row {row}, column {column}")
-        self.table = ttk.Treeview(where, columns=colHeading, show='headings', selectmode=tk.BROWSE)
+    def generic_tableview_widget(
+        self, where, row=int, column=int, title="", colHeading="", helptip=""
+    ):
+        self.logger.info(
+            f"Creating table view widget titled '{title}' with columns '{colHeading}' at row {row}, column {column}"
+        )
+        self.table = ttk.Treeview(
+            where, columns=colHeading, show="headings", selectmode=tk.BROWSE
+        )
         self.table.grid(row=row, column=column)
         self.table.heading(colHeading, text=title)
         self.bind_tooltip_events(self.table, helptip)
         self.logger.debug("Table view widget created and configured")
         return self.table
-    
+
     def insert(self, parent, index, values=()):
         if self.table is not None:
             self.table.insert(parent=parent, index=index, values=values)
@@ -114,7 +216,7 @@ class TableWidget:
         self.logger.debug(f"Getting item info for: {selected_item}")
         if self.table is not None:
             item_info = self.table.item(selected_item)
-            values = item_info.get('values', ())
+            values = item_info.get("values", ())
             if values:
                 self.logger.info(f"Values for item {selected_item}: {values}")
                 return values[0]
@@ -134,7 +236,9 @@ class TableWidget:
             self.table.grid_forget()
 
     def bind_tooltip_events(self, widget, text):
-        self.logger.debug(f"Binding tooltip events to widget with tooltip text: '{text}'")
+        self.logger.debug(
+            f"Binding tooltip events to widget with tooltip text: '{text}'"
+        )
         tooltip = ToolTip(widget, text)
         widget.bind("<Enter>", lambda event: tooltip.showtip())
         widget.bind("<Leave>", lambda event: tooltip.hidetip())
@@ -148,13 +252,17 @@ class ThresholdWidget:
         self.entry = None
         self.logger.info("ThresholdWidget instance initialized")
 
-    def generic_thresholds_widget(self, where, state=str, text=str, row=int, column=int, help=str):
-        self.logger.info(f"Creating threshold widget with label '{text}' at row {row}, column {column}")
+    def generic_thresholds_widget(
+        self, where, state=str, text=str, row=int, column=int, help=str
+    ):
+        self.logger.info(
+            f"Creating threshold widget with label '{text}' at row {row}, column {column}"
+        )
         self.label = tk.Label(where, text=text)
         self.label.grid(row=row, column=column, sticky=tk.W)
         self.entry = tk.Entry(where, width=3)
         self.entry.config(state=state)
-        self.entry.grid(row=row, column=column+1, sticky=tk.W)
+        self.entry.grid(row=row, column=column + 1, sticky=tk.W)
         self.bind_tooltip_events(self.entry, help)
         self.logger.debug("Threshold widget created and configured")
 
@@ -179,12 +287,13 @@ class ThresholdWidget:
         self.logger.info("Threshold widget components destroyed")
 
     def bind_tooltip_events(self, widget, text):
-        self.logger.debug(f"Binding tooltip events to widget with tooltip text: '{text}'")
+        self.logger.debug(
+            f"Binding tooltip events to widget with tooltip text: '{text}'"
+        )
         tooltip = ToolTip(widget, text)
         widget.bind("<Enter>", lambda event: tooltip.showtip())
         widget.bind("<Leave>", lambda event: tooltip.hidetip())
         self.logger.debug("Tooltip events bound successfully")
-
 
 
 class CheckboxWidget:
@@ -196,7 +305,9 @@ class CheckboxWidget:
     def create_checkbox(self, text, help_text, state, where, row, column):
         self.logger.info(f"Creating checkbox '{text}' at row {row}, column {column}")
         checkbox_state = tk.BooleanVar()
-        checkbox = tk.Checkbutton(where, state=state, text=text, variable=checkbox_state)
+        checkbox = tk.Checkbutton(
+            where, state=state, text=text, variable=checkbox_state
+        )
         checkbox.grid(row=row, column=column, sticky=tk.W)
         self.bind_tooltip_events(checkbox, help_text)
         self.checkboxes[text] = (checkbox, checkbox_state)
@@ -211,7 +322,6 @@ class CheckboxWidget:
                 current_row += 1
         self.logger.debug("Multiple checkboxes created")
 
-
     def get_dict_of_checkbox(self):
         self.logger.debug("Retrieving selected checkboxes")
         selected = {text: state.get() for text, (_, state) in self.checkboxes.items()}
@@ -225,14 +335,15 @@ class CheckboxWidget:
         self.checkboxes.clear()
         self.logger.info("All checkboxes destroyed")
 
-
     def bind_tooltip_events(self, widget, text):
-        self.logger.debug(f"Binding tooltip events to widget '{widget}' with tooltip text: '{text}'")
+        self.logger.debug(
+            f"Binding tooltip events to widget '{widget}' with tooltip text: '{text}'"
+        )
         tooltip = ToolTip(widget, text)
         widget.bind("<Enter>", lambda event: tooltip.showtip())
         widget.bind("<Leave>", lambda event: tooltip.hidetip())
         self.logger.debug(f"Tooltip events bound to widget '{widget}'")
-    
+
 
 class Console(tk.Text):
     def __init__(self, *args, **kwargs):
@@ -259,8 +370,6 @@ class Console(tk.Text):
     def reset(self, event):
         sys.stdout = self.old_stdout
         self.logger.info("Console widget destroyed and stdout reset")
-
-
 
 
 class ToolTip:
@@ -290,7 +399,7 @@ class ToolTip:
 
 class FileOpener:
     def __init__(self, file_path):
-        self.logger = Logger(__name__) 
+        self.logger = Logger(__name__)
         self.file_path = file_path
         self.logger.info(f"FileOpener instance created for file: {file_path}")
 
@@ -313,26 +422,39 @@ class FileOpener:
         else:
             self.logger.warning("Unsupported platform for file opening")
             return
-        
+
 
 class tkMatplot:
-    def __init__(self, title="", window_width=800, window_height=600, df=None, x_label=None, y_label=None, plot_type=None, color=None, x_plot=None, y_plot=None):
+    def __init__(
+        self,
+        title="",
+        window_width=800,
+        window_height=700,
+        df=None,
+        x_label=None,
+        y_label=None,
+        plot_type=None,
+        color=None,
+        x_plot=None,
+        y_plot=None,
+        data_type=None,
+    ):
         self.root = tk.Tk()
         self.root.wm_title(title)
 
         self.logger = Logger(__name__)
         self.logger.info("Initializing tkMatplot class")
 
-        
         self.root.geometry(f"{window_width}x{window_height}")
 
         self.fig = Figure(figsize=(5, 4), dpi=100)
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.root)
 
         self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
-        
 
-        button_quit = tk.Button(master=self.root, text="Quit", command=self.root.destroy)
+        button_quit = tk.Button(
+            master=self.root, text="Quit", command=self.root.destroy
+        )
         button_quit.pack(side=tk.BOTTOM, fill=tk.X)
         self.x_label = x_label
         self.y_label = y_label
@@ -346,49 +468,398 @@ class tkMatplot:
         self.highlighted_point = None
         self.ax = None
         self.default_directory = None
+        self.left_frame = None
+        self.right_frame = None
+        self.plot_options = None
+        self.plot_colors = None
+        self.scale_options = None
+        self.scale = "linear"
+        self.accept_change_button = None
+        self.toolbar = None
+        self.plot_style = "ggplot"
+        self.plot_style_options = None
+        self.change_sort_order = None
+        self.sort_order = "descending"
+        self.normalize_column_options = None
+        self.normalize_option = "none"
+        self.data_type = data_type
+        self.graphing_bin_check = False
+        self.numerical_bin_check = False
+        self.bin_selected_groups = None
+        self.reset_tuple = (
+            title,
+            window_width,
+            window_height,
+            df,
+            x_label,
+            y_label,
+            plot_type,
+            color,
+            x_plot,
+            y_plot,
+            data_type,
+            self.scale,
+            self.plot_style,
+            self.sort_order,
+            self.normalize_option,
+        )
 
     def plot(self):
         self.logger.info("Creating plot")
 
-        self.set_toolbar()
+        self.fig.clear()
 
-        plt.style.use('ggplot') 
+
+        if self.toolbar is None:
+            self.set_toolbar()
+
+        plt.style.use(self.plot_style)
         self.ax = self.fig.add_subplot()
 
-        self.ax.ticklabel_format(useOffset=False, style='plain', axis='both')
+        self.ax.ticklabel_format(useOffset=False, style="plain", axis="both")
 
-        
-        if self.plot_type == 'line':
-            self.ax.plot(self.df[self.x_plot], self.df[self.y_plot], color=self.color, marker='o')
-        elif self.plot_type == 'scatter':
-            self.ax.scatter(self.df[self.x_plot], self.df[self.y_plot], color=self.color)
-        elif self.plot_type == 'bar':
-            self.ax.bar(self.df[self.x_plot], self.df[self.y_plot], color=self.color)
-        
+        df = self.df
+
+        current_yplot = self.y_plot
+
+
+        if self.graphing_bin_check:
+            df = self.custom_bin_agg(df, self.bin_selected_groups)
+            if self.sort_order == "ascending":
+                df.sort_values(by=current_yplot, ascending=True, inplace=True)
+            elif self.sort_order == "descending":
+                df.sort_values(by=current_yplot, ascending=False, inplace=True)
+            elif self.sort_order == "random":
+                df = df.sample(frac=1).reset_index(drop=True)
+
+            if self.normalize_option != "none":
+                normalize_dataframe_column(df, current_yplot, self.normalize_option)
+                current_yplot = f"{self.normalize_option}Normalized{current_yplot}"  
+            for _, bin_data in df.iterrows():
+                color = bin_data['Color']
+                bin_name = bin_data['Bin']
+                x_data = [bin_name]  # Use bin_name as x_data
+                y_data = [bin_data[current_yplot]]  # Use the aggregated y_data
+
+                if self.plot_type == "line":
+                    self.ax.plot(x_data, y_data, color=color, marker="o", label=bin_name)
+                elif self.plot_type == "scatter":
+                    self.ax.scatter(x_data, y_data, color=color, label=bin_name)
+                elif self.plot_type == "bar":
+                    self.ax.bar(x_data, y_data, color=color, label=bin_name)
+        elif self.numerical_bin_check and self.bin_selected_groups is not None:
+            df = self.bin_agg_tuples(df, self.bin_selected_groups, self.x_plot)
+            if self.sort_order == "ascending":
+                df.sort_values(by=current_yplot, ascending=True, inplace=True)
+            elif self.sort_order == "descending":
+                df.sort_values(by=current_yplot, ascending=False, inplace=True)
+            elif self.sort_order == "random":
+                df = df.sample(frac=1).reset_index(drop=True)
+            if self.normalize_option != "none":
+                normalize_dataframe_column(df, current_yplot, self.normalize_option)
+                current_yplot = f"{self.normalize_option}Normalized{current_yplot}"
+            for bin_data in df.iterrows():
+                bin_name = bin_data[1]['Bin']
+                x_data = [bin_name]
+                y_data = [bin_data[1][current_yplot]]
+                if self.plot_type == "line":
+                    self.ax.plot(x_data, y_data, marker="o", label=bin_name)
+                elif self.plot_type == "scatter":
+                    self.ax.scatter(x_data, y_data, label=bin_name)
+                elif self.plot_type == "bar":
+                    self.ax.bar(x_data, y_data, label=bin_name)
+        else:
+            if self.sort_order == "ascending":
+                df.sort_values(by=current_yplot, ascending=True, inplace=True)
+            elif self.sort_order == "descending":
+                df.sort_values(by=current_yplot, ascending=False, inplace=True)
+            elif self.sort_order == "random":
+                df = df.sample(frac=1).reset_index(drop=True)
+
+            if self.normalize_option != "none":
+                normalize_dataframe_column(df, current_yplot, self.normalize_option)
+                current_yplot = f"{self.normalize_option}Normalized{current_yplot}"  
+            if self.plot_type == "line":
+                self.ax.plot(
+                    df[self.x_plot], df[current_yplot], color=self.color, marker="o"
+                )
+            elif self.plot_type == "scatter":
+                self.ax.scatter(df[self.x_plot], df[current_yplot], color=self.color)
+            elif self.plot_type == "bar":
+                self.ax.bar(df[self.x_plot], self.df[current_yplot], color=self.color)
+
+
         self.ax.set_xlabel(self.x_label, fontsize=12)
         self.ax.set_ylabel(self.y_label, fontsize=12)
         self.ax.set_title(self.title, fontsize=14)
+
         self.ax.grid(True)
-        self.ax.tick_params(axis='x', rotation=45)
-        self.ax.legend()  
+        self.ax.tick_params(axis="x", rotation=45, labelsize=8)
+
+        self.ax.legend()
 
         self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+
+        self.ax.set_yscale(self.scale)
+
+        self.canvas.draw()
+
+        if self.graphing_bin_check:
+            xplot='Bin'
+        else:
+            xplot=self.x_plot
+
+        self.fig.canvas.mpl_connect("motion_notify_event", partial(self.on_move, df, xplot, current_yplot))
+
+        if self.left_frame is not None:
+            self.left_frame.destroy()
+        self.add_table(df=df, xplot=xplot ,yplot=current_yplot)
+
+        if (
+            self.plot_colors is None
+            or self.plot_options is None
+            or self.scale_options is None
+            or self.plot_style_options is None
+            or self.normalize_option is None
+            or self.sort_order is None
+        ):
+            self.change_graph_options()
+            self.accept_change_button.config(state="disabled")
+
+        else:
+            self.accept_change_button.config(state="disabled")
 
 
         self.canvas.draw()
 
-        self.add_table()
+    def on_move(self,df, xplot, yplot ,event):
+        ax = None
+        nearest_x_idx = None
+        if event.inaxes:
+            ax = event.inaxes
+            x, y = event.xdata, event.ydata
 
+        if ax is not None and pd.api.types.is_numeric_dtype(df[xplot]):
+            df[xplot] = pd.to_numeric(df[xplot], errors="coerce")
+            nearest_x_idx = (df[xplot] - x).abs().idxmin()
+        elif ax is not None:
+            x_ticks_labels = [tick.get_text() for tick in ax.get_xticklabels()]
+            x_ticks_positions = ax.get_xticks()
+
+            if len(x_ticks_labels) > 0:
+                nearest_tick_pos = np.abs(x_ticks_positions - x).argmin()
+                nearest_x_label = x_ticks_labels[nearest_tick_pos]
+
+                if nearest_x_label in df[xplot].values:
+                    nearest_x_idx = df[
+                        df[xplot] == nearest_x_label
+                    ].index[0]
+                else:
+                    return
+
+        if nearest_x_idx is None:
+            return
+
+        unwanted_col = [
+            "A",
+            "A-",
+            "B+",
+            "B",
+            "B-",
+            "C+",
+            "C",
+            "C-",
+            "D",
+            "F",
+            "kurtosis",
+            "skewness",
+        ]
+        row_data = df.loc[nearest_x_idx]
+        row_data = row_data.drop(labels=unwanted_col, errors="ignore")
+        display_text = "\n".join([f"{col}: {val}" for col, val in row_data.items()])
+
+        if hasattr(self, "hover_annotation"):
+            self.hover_annotation.remove()
+
+        self.hover_annotation = ax.annotate(
+            display_text,
+            xy=(x, y),
+            xytext=(20, 20),
+            textcoords="offset points",
+            bbox=dict(boxstyle="round", fc="w"),
+        )
+        self.fig.canvas.draw_idle()
+
+
+    def change_plot_type(self):
+        if self.plot_type != self.plot_options.get_selected_option():
+            self.plot_type = self.plot_options.get_selected_option()
+        if self.color != self.plot_colors.get_selected_option():
+            self.color = self.plot_colors.get_selected_option()
+        if self.scale != self.scale_options.get_selected_option():
+            self.scale = self.scale_options.get_selected_option()
+        if self.plot_style != self.plot_style_options.get_selected_option():
+            self.plot_style = self.plot_style_options.get_selected_option()
+        if self.sort_order != self.change_sort_order.get_selected_option():
+            self.sort_order = self.change_sort_order.get_selected_option()
+        if self.normalize_option != self.normalize_column_options.get_selected_option():
+            self.normalize_option = self.normalize_column_options.get_selected_option()
+
+        self.plot()
+
+    def reset_state(self):
+        (
+            title,
+            window_width,
+            window_height,
+            df,
+            x_label,
+            y_label,
+            plot_type,
+            color,
+            x_plot,
+            y_plot,
+            data_type,
+            scale,
+            plot_style,
+            sort_order,
+            normalize_option,
+        ) = self.reset_tuple
+
+        self.root.wm_title(title)
+        self.root.geometry(f"{window_width}x{window_height}")
+        self.df = df
+        self.x_label = x_label
+        self.y_label = y_label
+        self.plot_type = plot_type
+        self.color = color
+        self.x_plot = x_plot
+        self.y_plot = y_plot
+        self.title = title
+        self.scale = scale
+        self.plot_style = plot_style
+        self.sort_order = sort_order
+        self.normalize_option = normalize_option
+        self.data_type = data_type
+        self.numerical_bin_check = False
+        self.graphing_bin_check = False
+
+
+        self.plot()
+
+    def change_graph_options(self):
+        self.right_frame = tk.Frame(self.root)
+        self.right_frame.pack(side=tk.RIGHT, fill="both", expand=True)
+
+        self.plot_options = tkOptionMenu(
+            master=self.right_frame,
+            options=["line", "scatter", "bar"],
+            pre_selected=f"{self.plot_type}",
+            label_text="Change Plot Type",
+            command=self.set_normal_state,
+        )
+        self.plot_options.grid(row=1, column=1, padx=(0, 20))
+
+        self.plot_colors = tkOptionMenu(
+            master=self.right_frame,
+            options=get_random_values(get_non_red_colors()),
+            pre_selected=f"{self.color}",
+            label_text="Change Plot Color",
+            command=self.set_normal_state,
+            colors=get_non_red_colors_name_hex(),
+        )
+        self.plot_colors.grid(row=1, column=3, padx=(20, 0))
+
+        self.scale_options = tkOptionMenu(
+            master=self.right_frame,
+            options=[
+                "linear",
+                "log",
+                "symlog",
+                "asinh",
+            ],
+            pre_selected=self.scale,
+            label_text="Axis Scale",
+            command=self.set_normal_state,
+        )
+        self.scale_options.grid(row=3, column=1)
+
+        self.plot_style_options = tkOptionMenu(
+            master=self.right_frame,
+            options=get_random_values(get_nonseaborn_styles()),
+            pre_selected=self.plot_style,
+            label_text="Change Plot Style",
+            command=self.set_normal_state,
+        )
+        self.plot_style_options.grid(row=3, column=3)
+
+        self.accept_change_button = tk.Button(
+            self.right_frame,
+            text="Accept",
+            command=self.change_plot_type,
+        )
+
+        self.change_sort_order = tkOptionMenu(
+            master=self.right_frame,
+            options=["ascending", "descending", "random"],
+            pre_selected=self.sort_order,
+            label_text="Sort Order",
+            command=self.set_normal_state,
+        )
+
+        self.change_sort_order.grid(row=5, column=1)
+
+        self.normalize_column_options = tkOptionMenu(
+            master=self.right_frame,
+            options=["none", "minmax", "zscore", "robust", "maxabs", "log"],
+            pre_selected=self.normalize_option,
+            label_text="Normalize Option",
+            command=self.set_normal_state,
+        )
+
+        self.normalize_column_options.grid(row=5, column=3)
+
+        self.reset_button = tk.Button(self.right_frame, text='Reset Plot', command = self.reset_state)
+        self.reset_button.grid(row=6, column=3)
+
+        self.accept_change_button.grid(row=8, column=2)
+
+        if self.df[self.x_plot].dtype == "object":
+            self.bin_button = tk.Button(self.right_frame, text='Create Bins?', command=self.bin_creation)
+            self.bin_button.grid(row=6, column=1)
+            self.graphing_bin_check = True
+        else:
+            self.numerical_bin_check = True
+            numbin = NumericalBinApp(self.right_frame, row=6, column=1, set_low=min(self.df[self.x_plot]), set_high=max(self.df[self.x_plot]))
+            numbin.set_callback(self.on_bins_created)
+
+
+    def bin_creation(self):
+        bin_popup = BinPopup(self.root, {key: False for key in self.df[self.x_plot]}, callback=self.on_bins_created)
+
+    def on_bins_created(self, selected_groups):
+        if self.df[self.x_plot].dtype == "object":
+            self.graphing_bin_check = True
+        else:
+            self.numerical_bin_check = True
+
+        self.bin_selected_groups = selected_groups
+        self.plot()
+
+    def set_normal_state(self):
+        self.accept_change_button.config(state=tk.NORMAL)
 
     def set_toolbar(self):
-        toolbar = CustomToolbar(self.canvas, self.root, pack_toolbar=False)
-        toolbar.pack(side=tk.TOP, fill=tk.X)
-        toolbar.update()
+        self.toolbar = NavigationToolbar2Tk(self.canvas, self.root, pack_toolbar=False)
+        self.toolbar.pack(side=tk.TOP, fill=tk.X)
+        self.toolbar.update()
 
-    def add_table(self):
-        self.tree = ttk.Treeview(self.root)
+    def add_table(self, df,xplot, yplot):
+        self.left_frame = tk.Frame(self.root)
+        self.left_frame.pack(side=tk.LEFT, fill="both", expand=True)
+        self.tree = ttk.Treeview(self.left_frame)
 
-        self.tree['columns'] = ("X-Value", "Y-Value")
+        self.tree["columns"] = ("X-Value", "Y-Value")
         self.tree.column("#0", width=0, stretch=tk.NO)
         self.tree.column("X-Value", anchor=tk.W, width=80)
         self.tree.column("Y-Value", anchor=tk.W, width=80)
@@ -397,27 +868,87 @@ class tkMatplot:
         self.tree.heading("X-Value", text=self.x_label, anchor=tk.W)
         self.tree.heading("Y-Value", text=self.y_label, anchor=tk.W)
 
-        for i, (x, y) in enumerate(zip(self.df[self.x_plot], self.df[self.y_plot])):
-            self.tree.insert(parent='', index='end', iid=i, text='', values=(x, y))
+        for i, (x, y) in enumerate(zip(df[xplot], df[yplot])):
+            self.tree.insert(parent="", index="end", iid=i, text="", values=(x, y))
 
-        self.tree.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
-        self.tree.bind('<<TreeviewSelect>>', self.on_tree_selection_change)
+        self.tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self.tree.bind("<<TreeviewSelect>>", partial(self.on_tree_selection_change, df, xplot, yplot))
+
+    def update_table(self, df, xplot, yplot):
+        self.tree.delete(*self.tree.get_children())
+        for i, (x, y) in enumerate(zip(df[xplot], df[yplot])):
+            self.tree.insert(parent="", index="end", iid=i, text="", values=(x, y))
+
+    def custom_bin_agg(self, df, selected_groups):
+        grades = ["A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D", "F"]
+        agg_list = ['Enrollments', 'GPA', 'stddev', 'kurtosis', 'skewness', 'Sections', 'Courses'] + grades
+        agg_dict = {agg: "mean" for agg in agg_list}
+
+        df['Bin'] = None
+        df['Color'] = None
+
+        for group, color in selected_groups:
+            bin_name = "[" + ", ".join(group) + "]"
+            for item in group:
+                df.loc[df[self.x_plot] == item, 'Bin'] = bin_name
+                df.loc[df[self.x_plot] == item, 'Color'] = color
+
+        df['Bin'] = df['Bin'].fillna('others')
+        df['Color'] = df['Color'].fillna('grey')  # Default color for 'others' bin
+
+        colors = df[['Bin', 'Color']].drop_duplicates().set_index('Bin')
+
+        df_agg = df.groupby('Bin', observed=True).agg(agg_dict).reset_index()
+
+        bin_counts = df.groupby('Bin').size().reset_index(name='bin_count')
+
+        df_agg = df_agg.merge(bin_counts, on='Bin', how='left')
+
+        df_agg = df_agg.join(colors, on='Bin')
+
+        float_cols = df_agg.select_dtypes(include="float").columns
+        df_agg[float_cols] = df_agg[float_cols].round(3)
+
+        return df_agg
+    
+
+    def bin_agg_tuples(self, df, bin_tuples, x_plot):
+        agg_list=['Enrollments', 'GPA', 'stddev', 'kurtosis', 'skewness', 'Sections', 'Courses']
+        grades = ["A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D", "F"]
+        all_agg_cols = agg_list + grades
+        agg_dict = {col: "mean" for col in all_agg_cols}
+        edges = [t[0] for t in bin_tuples] + [bin_tuples[-1][1]]
+
+        df['Bin'] = pd.cut(df[x_plot], bins=edges, right=False,
+                        labels=[f"{t[0]}-{t[1]}" for t in bin_tuples], include_lowest=True)
+
+        df_agg = df.groupby('Bin', observed=True).agg(agg_dict)
+        bin_counts = df.groupby('Bin').size().rename('bin_count')
+        df_agg = df_agg.join(bin_counts)
+        df_agg.reset_index(inplace=True)
+
+        # Optional: Round float columns for better presentation
+        float_cols = df_agg.select_dtypes(include="float").columns
+        df_agg[float_cols] = df_agg[float_cols].round(3)
+
+        return df_agg
 
 
-    def on_tree_selection_change(self, event):
+    def on_tree_selection_change(self,df, xplot, yplot ,event):
         selected_items = self.tree.selection()
         if selected_items:
             index = int(selected_items[0])
-            self.highlight_plot_point(index)
-        
-    def highlight_plot_point(self, index):
+            self.highlight_plot_point(index, df, xplot, yplot)
+
+    def highlight_plot_point(self, index, df, xplot, yplot):
         self.clear_highlight()
 
+        x, y = df[xplot].iloc[index], df[yplot].iloc[index]
 
-        x, y = self.df[self.x_plot].iloc[index], self.df[self.y_plot].iloc[index]
-
-        self.ax = self.fig.self.axes[0]  # Get the current self.axes
-        self.highlighted_point = self.ax.plot(x, y, marker='o', markersize=10, color='red')  # Customize marker size and color as needed
+        self.ax = self.fig.axes[0]  # Get the current self.axes
+        self.highlighted_point = self.ax.plot(
+            x, y, marker="o", markersize=10, color="red"
+        )  # Customize marker size and color as needed
 
         self.canvas.draw()
 
@@ -431,88 +962,387 @@ class tkMatplot:
         except Exception as e:
             self.logger.error(f"Error clearing highlight: {e}")
 
-class CustomToolbar(NavigationToolbar2Tk):
-    def save_figure(self, *args):
-        # Define the filetypes you want to save as
-        filetypes = self.canvas.get_supported_filetypes_grouped()
-        tk_filetypes = [
-            (name, " ".join(f"*.{ext}" for ext in exts))
-            for name, exts in sorted(filetypes.items())
-        ]
 
-        #initial directory to open in the dialog
-        initialdir = os.path.expanduser(plt.rcParams['savefig.directory'])
-        # Determine the initial file name to suggest in the dialog
-        initialfile = os.path.splitext(self.canvas.get_default_filename())[0]
+class NumericalBinApp:
+    def __init__(self, root, row=0, column=0, set_low=None, set_high=None):
+        self.root = root
+        self.set_low = set_low
+        self.set_high = set_high
 
-        # Open a file dialog and ask the user for a filename to save as
-        fname = asksaveasfilename(
-            master=self.canvas.get_tk_widget().master,
-            title='Save the figure',
-            initialdir=initialdir,
-            initialfile=initialfile,
-            defaultextension='png',
-            filetypes=tk_filetypes
-        )
 
-        # Check if a filename was provided
-        if fname:
-            if not any(fname.endswith(f'.{ext}') for exts in filetypes.values() for ext in exts):
-                fname += '.png'
-            try:
-                self.canvas.figure.savefig(fname)
-                print("\n\nFile Created:", f" {fname}\n\n")
-                plt.rcParams['savefig.directory'] = os.path.dirname(fname)
-            except Exception as e:
-                tk.messagebox.showerror("Error saving file", str(e))
-        else:
-            # User cancelled the dialog
-            print("Save figure operation cancelled.")
-class tkDropdown:
-    def __init__(self, master, options_dict, row, column):
+        self.create_widgets(row, column)
+        self.callback = None  # Initialize callback function to None
+
+    def create_widgets(self, row, column):
+        input_frame = ttk.Frame(self.root)
+        input_frame.grid(row=row, column=column, padx=5, pady=5, sticky="w")  # Stick to west (left)
+
+        ttk.Label(input_frame, text="Min:").grid(row=0, column=0, padx=5, pady=5)
+        self.min_entry = ttk.Entry(input_frame, width=10)
+        self.min_entry.insert(0, self.set_low)
+        self.min_entry.grid(row=0, column=1, padx=5, pady=5)
+
+        ttk.Label(input_frame, text="Max:").grid(row=0, column=2, padx=5, pady=5)
+        self.max_entry = ttk.Entry(input_frame, width=10)
+        self.max_entry.insert(0, self.set_high)
+        self.max_entry.grid(row=0, column=3, padx=5, pady=5)
+
+        ttk.Label(input_frame, text="Step:").grid(row=0, column=4, padx=5, pady=5)
+        self.step_entry = ttk.Entry(input_frame, width=10)
+        self.step_entry.grid(row=0, column=5, padx=5, pady=5)
+
+        # Generate button
+        self.generate_button = ttk.Button(input_frame, text="Generate", command=self.generate_bins)
+        self.generate_button.grid(row=0, column=6, padx=5, pady=5)
+
+    def set_callback(self, callback):
+        self.callback = callback
+    
+    def generate_bins(self):
+        try:
+            min_value = float(self.min_entry.get())
+            max_value = float(self.max_entry.get())
+            step_value = float(self.step_entry.get())
+            bins = self.numerical_bin(min_value, max_value, step_value)
+
+            if self.callback:  # If a callback function is set, use it
+                self.callback(bins)
+        except ValueError:
+            if self.callback:  # If a callback is set, let it handle errors
+                self.callback([])  # Pass an empty list to indicate error      
+
+    def numerical_bin(self, start, end, step):
+        edges = np.arange(start, end + step, step)
+        return [(round(edges[i], 2), round(edges[i + 1], 2)) for i in range(len(edges) - 1)]
+
+
+class BinPopup():
+    def __init__(self, master, options_dict, callback=None):
+        self.master = master
         self.options_dict = options_dict
-        self.dropdown_var = tk.StringVar()
+        self.popup = tk.Toplevel(master=master)
+        self.popup.title('Create Bins for Grouping')
+        self.window_length = 500
+        self.window_height = 500
+        self.popup.geometry(f"{self.window_length}x{self.window_height}")
+        self.callback=callback
 
-        # Create the dropdown menu
-        self.dropdown = ttk.Combobox(master, textvariable=self.dropdown_var)
-        self.dropdown['values'] = list(self.options_dict.keys())
-        self.dropdown.grid(row=row, column=column)
-        self.dropdown['state'] = 'normal'
+        self.groups = []
+        self.current_row = 0
+        self.current_col = 0
+
+        self.create_scrollable_area()
+        self.create_bin_options()
+        self.check_selection()
 
 
-        # Bind the selection event
-        self.dropdown.bind('<<ComboboxSelected>>', self.update_dict)
-        self.dropdown.bind('<KeyRelease>', self.filter_options)
+    def create_scrollable_area(self):
+        # Create a canvas widget
+        self.canvas = tk.Canvas(self.popup)
+        self.canvas.grid(row=0, column=0, sticky='nsew')
+
+        self.v_scrollbar = tk.Scrollbar(self.popup, orient=tk.VERTICAL, command=self.canvas.yview)
+        self.v_scrollbar.grid(row=0, column=1, sticky='ns')
+        self.h_scrollbar = tk.Scrollbar(self.popup, orient=tk.HORIZONTAL, command=self.canvas.xview)
+        self.h_scrollbar.grid(row=1, column=0, sticky='ew')
+
+        self.canvas.configure(yscrollcommand=self.v_scrollbar.set, xscrollcommand=self.h_scrollbar.set)
+
+        self.scrollable_frame = tk.Frame(self.canvas)
+        self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
+
+        self.scrollable_frame.bind("<Configure>", lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all")))
+
+        # Make the canvas expandable
+        self.popup.grid_rowconfigure(0, weight=1)
+        self.popup.grid_columnconfigure(0, weight=1)
+
+        self.bind_scroll_events()
+
+    def bind_scroll_events(self):
+        self.canvas.bind_all("<MouseWheel>", self.on_mouse_wheel)
+        self.canvas.bind_all("<Button-4>", self.on_mouse_wheel)
+        self.canvas.bind_all("<Button-5>", self.on_mouse_wheel)
 
 
-    def update_dict(self, event):
-        for key in self.options_dict:
-            self.options_dict[key] = False
+    def on_mouse_wheel(self, event):
+        if event.num == 5 or event.delta == -120:  # Scroll down
+            self.canvas.yview_scroll(1, "units")
+        elif event.num == 4 or event.delta == 120:  # Scroll up
+            self.canvas.yview_scroll(-1, "units")
 
-        selected_key = self.dropdown_var.get()
-        if selected_key in self.options_dict:
-            self.options_dict[selected_key] = True
+
+    def create_bin_options(self):
+        self.group_frame = tk.Frame(self.scrollable_frame)
+        self.group_frame.grid(row=self.current_row, column=self.current_col, sticky='nsew', padx=10, pady=10)
+
+        self.plot_colors = tkOptionMenu(
+            master=self.group_frame,
+            options=get_random_values(get_non_red_colors()),
+            pre_selected=get_random_values(get_non_red_colors())[0],
+            label_text="Change Bin Color",
+            colors=get_non_red_colors_name_hex()
+        )
+        self.plot_colors.grid(row=0, column=0)
+
+        self.dropdown = tkDropdown(
+            master=self.group_frame, options_dict=self.options_dict, row=1, column=0,
+            initial_message='Create a Group', allow_multiple_entries=True,
+            filename='group_options', scrolltextbox_height=5, scrolltextbox_width=20
+        )
+        self.dropdown.dropdown_grid(padx=60)
+
+        self.add_group_button = tk.Button(self.group_frame, text="Add Group", command=self.add_group, state='disabled')
+        self.add_group_button.grid(row=4, column=0, padx=10)
+
+        self.accept_button = tk.Button(self.group_frame, text="Accept", command=self.accept, state='disabled')
+        self.accept_button.grid(row=5, column=0, padx=10)
+
+    def add_group(self):
+        selected_options = self.dropdown.get_selected_options()
+        selected_color = self.plot_colors.get_selected_option()
+        if selected_options and selected_color:
+            self.groups.append((selected_options, selected_color))
+            self.current_row += 1
+            if self.current_row == 3:
+                self.current_row = 0
+                self.current_col += 3
+            self.add_group_button.destroy()
+            self.accept_button.destroy()
+            self.create_bin_options()
+
+    def check_selection(self):
+        if self.dropdown.get_selected_options():
+            self.set_state_normal()
+        self.popup.after(100, self.check_selection) 
+
+    def set_state_normal(self):
+        self.add_group_button.config(state='normal')
+        self.accept_button.config(state='normal')
+
+    def get_selected_groups(self):
+        return self.groups
+
+    def accept(self):
+        selected_options = self.dropdown.get_selected_options()
+        selected_color = self.plot_colors.get_selected_option()
+        if selected_options and selected_color:
+            self.groups.append((selected_options, selected_color))
+
+        if self.callback:
+            self.callback(self.groups)
+        else:
+            thing = self.get_selected_groups
+        self.popup.destroy()
+
+
+
+
+
+class tkOptionMenu(tk.Frame):
+    def __init__(
+        self,
+        master,
+        options,
+        pre_selected,
+        label_text,
+        colors=None,
+        command=None,
+        *args,
+        **kwargs,
+    ):
+        super().__init__(master, *args, **kwargs)
+        self.colors = (
+            colors if colors else {}
+        )  # Default to empty dict if no colors provided
+
+        self.variable = tk.StringVar(master=self, value=pre_selected)
+
+        if command:
+            self.command = command
+            self.variable.trace_add("write", self.update_command)
+
+        self.label = tk.Label(self, text=label_text)
+        self.label.pack(side=tk.LEFT)
+
+        self.option_menu = tk.OptionMenu(self, self.variable, *options)
+        self.option_menu.pack(side=tk.LEFT)
+
+        self.colorize_options()
 
     def get_selected_option(self):
-        for key, value in self.options_dict.items():
-            if value:
-                return key
-        return None
+        return self.variable.get()
 
-    def filter_options(self, event):
-        typed = self.dropdown_var.get()
-        if typed == '':
-            self.dropdown['values'] = list(self.options_dict.keys())
+    def is_dark(self, color_hex):
+        """Determine if a color is dark based on its hex value."""
+        r, g, b = (
+            int(color_hex[1:3], 16),
+            int(color_hex[3:5], 16),
+            int(color_hex[5:7], 16),
+        )
+        brightness = (r * 299 + g * 587 + b * 114) / 1000
+        return brightness < 120
+
+    def update_command(self, *args):
+        if callable(self.command):
+            self.command()
+
+    def colorize_options(self):
+        menu = self.option_menu["menu"]
+        for index, label in enumerate(
+            menu.entrycget(index, "label") for index in range(menu.index("end") + 1)
+        ):
+            color_hex = self.colors.get(
+                label, "#FFFFFF"
+            )  # Default to white if color not found
+            menu.entryconfig(
+                index,
+                background=color_hex,
+                foreground="#FFFFFF" if self.is_dark(color_hex) else "#000000",
+            )
+
+
+
+##Creates a combobox, with the ability to select items from a dropdown and see what you have selected in a textbox
+##For viewing purpose. Also allows to export as text file
+class tkDropdown():
+    def __init__(
+        self,
+        master,
+        options_dict,
+        row,
+        column,
+        initial_message="Select an option",
+        allow_multiple_entries=False,
+        command=None,
+        filename="textfile",
+        scrolltextbox_width = 20,
+        scrolltextbox_height = 1,
+    ):
+        self.master = master
+        self.allow_multiple_entries = allow_multiple_entries
+        self.options_dict = options_dict
+        self.selected_options = []
+        self.row = row
+        self.column = column
+        self.initial_message = initial_message
+        self.command = None
+        self.path = os.path.join(os.getcwd(), filename + ".txt")
+        self.scrolltextbox_width = scrolltextbox_width
+        self.scrolltextbox_height = scrolltextbox_height
+
+
+        if command:
+            self.command = command
+
+        self.create_combobox()
+        if self.allow_multiple_entries:
+            self.create_selected_options_display()
+
+    def dropdown_grid(self, **kwargs):
+        self.dropdown.grid(**kwargs)
+
+
+    def create_combobox(self):
+        self.dropdown = autocomplete.AutocompleteCombobox(
+            self.master, completevalues=list(self.options_dict.keys())
+        )
+        self.dropdown.grid(row=self.row, column=self.column, sticky=tk.W)
+        self.dropdown["state"] = "normal"
+        self.dropdown.set(self.initial_message)
+
+        if self.command:
+            self.dropdown.bind("<<ComboboxSelected>>", self.update_command)
         else:
-            filtered = [option for option in list(self.options_dict.keys()) if typed.lower() in option.lower()]
-            self.dropdown['values'] = filtered
-
-        self.dropdown.event_generate('<Down>')
-
-
-
-
-
-
-            
+            self.dropdown.bind("<<ComboboxSelected>>", self.update_dict)
         
+        self.dropdown.bind("<Return>", self.update_dict)
+        self.dropdown.bind("<FocusOut>", self.update_dict)
+        self.dropdown.bind("<Tab>", self.update_dict)
+
+    def create_selected_options_display(self):
+        self.selected_options_label = tkScrolledtextBox(
+            self.master, self.row + 1, self.column,
+              self.scrolltextbox_width,
+              self.scrolltextbox_height
+        )
+
+        tk.Button(
+            self.master,
+            text="Export Choices",
+            command=self.export_to_txt,
+        ).grid(row=self.row + 2, column=self.column)
+
+    def update_command(self, *args):
+        selected_key = self.dropdown.get()
+        if (
+            selected_key in self.options_dict
+            and selected_key not in self.selected_options
+        ):
+            self.selected_options.append(selected_key)
+
+        if callable(self.command):
+            self.command()
+
+    def update_dict(self, event):
+        selected_key = self.dropdown.get()
+        if (
+            selected_key in self.options_dict
+            and selected_key not in self.selected_options
+        ):
+            self.selected_options.append(selected_key)
+            self.options_dict[selected_key] = True
+            if self.allow_multiple_entries:
+                self.selected_options_label.add_text(f"{selected_key},\n")
+                self.dropdown.set("")
+            else:
+                self.dropdown.set(selected_key)
+
+    def get_selected_options(self):
+        return self.selected_options
+
+    def isEmpty(self):
+        return not self.selected_options
+
+    def clearList(self):
+        self.selected_options.clear()
+        self.selected_options_label.config(text="")
+
+    def destroy(self):
+        self.dropdown.destroy()
+        if self.allow_multiple_entries:
+            self.selected_options_label.destroy()
+        self.selected_options.clear()
+
+    def export_to_txt(self):   
+        if self.allow_multiple_entries:
+            self.selected_options_label.export_to_txt(self.path)
+            print("\n\nFile Created:", f" {self.path}\n\n")
+
+        else:
+            with open(self.path, "w") as file:
+                file.write(self.dropdown.get())
+                print("\n\nFile Created:", f" {self.path}\n\n")
+
+class tkScrolledtextBox(tkst.ScrolledText):
+    def __init__(self, master, row, column, width, height):
+        super().__init__(master, width=width, height=height)
+        self.grid(row=row, column=column)
+        self.config(state="disabled")
+
+    def add_text(self, text):
+        self.config(state="normal")
+        self.insert(tk.END, text)
+        self.config(state="disabled")
+
+    def clear_text(self):
+        self.delete("1.0", tk.END)
+
+    def get_text(self):
+        return self.get("1.0", tk.END)
+    
+    def export_to_txt(self, filename):
+        with open(filename, "w") as file:
+            file.write(self.get_text())
+
+    
