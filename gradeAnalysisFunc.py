@@ -285,11 +285,59 @@ def MajorDepartmentAnalysis(
     deptTable = pandas_df_agg(df, "Department")
     mjrTable = pandas_df_agg(df, "Major")
 
+<<<<<<< HEAD
     deptTable = deptTable[deptTable["Department"] == department]
     mjrTable = mjrTable[mjrTable["Major"] == major]
 
     if csv:
         save_path = os.path.join(user_directory, f"{department}_data.csv")
+=======
+    print("\n\nFile Created:", f" {save_path}\n\n")
+    plt.savefig(save_path, bbox_inches='tight')
+
+
+bins = createList(2, 4, 0.05)
+
+
+# instructor Grade Distribution histogram -- frequency of grades, excluding inst teaching < 10 sections
+def InstGPATrunc(df, user_directory, min_sections = None, max_sections = None, csv=False):
+    InstTable = pd.read_csv('instTable.csv')
+    InstTable.sort_values('GPA W', inplace=True)
+
+    InstTable = drop_values_by_threshold(InstTable, 'Sections' , min_sections, max_sections)
+
+    InstTable.reset_index()
+    if csv:
+        save_path = os.path.join(user_directory, 'instTableGPAVsInst.csv')
+        print("\n\nFile Created:", f" {save_path}\n\n")
+
+        InstTable.to_csv(save_path, encoding='utf-8-sig')
+
+    it = InstTable.plot.hist(x='Instructor', y='GPA W', figsize=(13,3), bins=bins, color='steelblue', legend=False)
+    it.set_xlabel("Weighted GPA")
+    it.set_ylabel("Number of Instructors")
+    plt.axvline(InstTable['GPA W'].mean(), color='red', linestyle = 'dashed', linewidth=2)
+    plt.xticks(bins, rotation='vertical')
+    plt.axis([2.1, 4.0, None, None])
+    it.yaxis.grid()
+    save_path = os.path.join(user_directory, 'InstGPATrunc.jpg')
+    print("\n\nFile Created:", f" {save_path}\n\n")
+
+    plt.savefig(save_path, bbox_inches='tight')
+
+# instructor Enrollment Distribution histogram for instructors with the number of students taught(enrollements) > 200
+def InstEnrollTrunc(df, user_directory, min_enrollments = None, max_enrollments = None, csv=False):
+    InstTable = pd.read_csv('instTable.csv')
+    InstTable.sort_values('Enrollments', inplace=True)
+    
+    InstTable = drop_values_by_threshold(InstTable, 'Enrollments' , min_enrollments, max_enrollments)
+
+
+    InstTable.reset_index()
+
+    if csv:
+        save_path = os.path.join(user_directory, 'instTableEnrollVsInst.csv')
+>>>>>>> 7ce9b73 (First GUI Upload)
         print("\n\nFile Created:", f" {save_path}\n\n")
         deptTable.to_csv(save_path, encoding="utf-8-sig")
         save_path = os.path.join(user_directory, f"{major}_data.csv")
