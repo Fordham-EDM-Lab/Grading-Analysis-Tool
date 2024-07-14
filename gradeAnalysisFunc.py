@@ -343,7 +343,7 @@ def DepartmentAnalysis(
 
     if dic.department_analysis_options["Department vs GPA"]:
         plotter = gaw.tkMatplot(
-            title="Department vs GPA",
+            title="Average Department GPA",
             window_width=800,
             window_height=700,
             x_label="Department",
@@ -358,7 +358,7 @@ def DepartmentAnalysis(
 
     if dic.department_analysis_options["Department vs Enrollment"]:
         plotter = gaw.tkMatplot(
-            title="Department vs Enrollment",
+            title="Average Department Enrollment",
             window_width=800,
             window_height=700,
             x_label="Department",
@@ -366,6 +366,51 @@ def DepartmentAnalysis(
             plot_type="scatter",
             color="teal",
             x_plot="Department",
+            y_plot="Enrollments",
+            df=deptTable,
+        )
+        plotter.plot()
+    
+    if dic.department_analysis_options["Department vs Section #"]:
+        plotter = gaw.tkMatplot(
+            title="# Sections offered by Department",
+            window_width=800,
+            window_height=700,
+            x_label="Department",
+            y_label="Sections",
+            plot_type="scatter",
+            color="teal",
+            x_plot="Department",
+            y_plot="Sections",
+            df=deptTable,
+        )
+        plotter.plot()
+
+    if dic.department_analysis_options["Department vs Course #"]:
+        plotter = gaw.tkMatplot(
+            title="# Courses offered by Department",
+            window_width=800,
+            window_height=700,
+            x_label="Department",
+            y_label="Courses",
+            plot_type="bar",
+            color="teal",
+            x_plot="Department",
+            y_plot="Courses",
+            df=deptTable,
+        )
+        plotter.plot()
+
+    if dic.department_analysis_options["Standard Deviation vs Enrollment"]:
+        plotter = gaw.tkMatplot(
+            title="GPA Standard Deviation vs Department Enrollment Number",
+            window_width=800,
+            window_height=700,
+            x_label="Standard Deviation",
+            y_label="Enrollment",
+            plot_type="scatter",
+            color="teal",
+            x_plot="stddev",
             y_plot="Enrollments",
             df=deptTable,
         )
@@ -436,7 +481,7 @@ def InstructorAnalysis(
 
     if dic.instructor_analysis_options["Instructor vs GPA"]:
         plotter = gaw.tkMatplot(
-            title="Instructor vs GPA",
+            title="Average Instructor GPA",
             window_width=800,
             window_height=700,
             x_label="Instructor",
@@ -451,7 +496,7 @@ def InstructorAnalysis(
 
     if dic.instructor_analysis_options["Instructor vs Enrollment"]:
         plotter = gaw.tkMatplot(
-            title="Instructor vs Enrollment",
+            title="# Enrollment per Instructor",
             window_width=800,
             window_height=700,
             x_label="Instructor",
@@ -464,24 +509,9 @@ def InstructorAnalysis(
         )
         plotter.plot()
 
-    if dic.instructor_analysis_options["Course(By Instructor) vs GPA"]:
-        plotter = gaw.tkMatplot(
-            title="Course(By Instructor) vs GPA",
-            window_width=800,
-            window_height=700,
-            x_label="Course",
-            y_label="GPA",
-            plot_type="bar",
-            color=gaw.get_random_values(gaw.get_non_red_colors())[0],
-            x_plot="CourseTitle",
-            y_plot="GPA",
-            df=instTable,
-        )
-        plotter.plot()
-
     if dic.instructor_analysis_options["Instructor vs Section #"]:
         plotter = gaw.tkMatplot(
-            title="Instructor vs Section #",
+            title="# Sections taught per Instructor",
             window_width=800,
             window_height=700,
             x_label="Instructor",
@@ -496,7 +526,7 @@ def InstructorAnalysis(
 
     if dic.instructor_analysis_options["Instructor vs Course #"]:
         plotter = gaw.tkMatplot(
-            title="Instructor vs Course #",
+            title="# Courses taught per Instructor",
             window_width=800,
             window_height=700,
             x_label="Instructor",
@@ -511,7 +541,7 @@ def InstructorAnalysis(
 
     if dic.instructor_analysis_options["Instructor vs Standard Deviation"]:
         plotter = gaw.tkMatplot(
-            title="Instructor vs Standard Deviation",
+            title="GPA Standard Deviation per Instructor",
             window_width=800,
             window_height=700,
             x_label="Instructor",
@@ -526,7 +556,7 @@ def InstructorAnalysis(
 
     if dic.instructor_analysis_options["GPA vs Enrollment"]:
         plotter = gaw.tkMatplot(
-            title="GPA vs Enrollment for Instructors",
+            title="Instructor's Average GPA vs Total Enrollment",
             window_width=800,
             window_height=700,
             x_label="Average GPA",
@@ -567,7 +597,7 @@ def MajorAnalysis(
 
     if dic.major_analysis_options["Major vs GPA"]:
         plotter = gaw.tkMatplot(
-            title="Major vs GPA",
+            title="Major's Average GPA",
             window_width=800,
             window_height=700,
             x_label="Major",
@@ -582,7 +612,7 @@ def MajorAnalysis(
 
     if dic.major_analysis_options["Major vs Enrollment"]:
         plotter = gaw.tkMatplot(
-            title="Major vs Enrollment",
+            title="# Enrollment per Major",
             window_width=800,
             window_height=700,
             x_label="Major",
@@ -597,7 +627,7 @@ def MajorAnalysis(
 
     if dic.major_analysis_options["Major vs Section #"]:
         plotter = gaw.tkMatplot(
-            title="Major vs Section #",
+            title="# Sections taken by Major",
             window_width=800,
             window_height=700,
             x_label="Major",
@@ -612,7 +642,7 @@ def MajorAnalysis(
 
     if dic.major_analysis_options["Major vs Course #"]:
         plotter = gaw.tkMatplot(
-            title="Major vs Course #",
+            title="# Courses taken by Major",
             window_width=800,
             window_height=700,
             x_label="Major",
@@ -627,7 +657,7 @@ def MajorAnalysis(
 
     if dic.major_analysis_options["Standard Deviation vs Enrollment"]:
         plotter = gaw.tkMatplot(
-            title="Standard Deviation vs Enrollment",
+            title="Major's GPA Standard Deviation vs Major's Total Enrollment",
             window_width=800,
             window_height=700,
             x_label="Standard Deviation",
@@ -729,7 +759,7 @@ def section_analysis(
 
     if dic.section_analysis_options["Section vs GPA"]:
         plotter = gaw.tkMatplot(
-            title="Section vs GPA",
+            title="Individual Section's GPA",
             window_width=800,
             window_height=700,
             x_label="Section",
@@ -744,7 +774,7 @@ def section_analysis(
 
     if dic.section_analysis_options["Section vs Class Size"]:
         plotter = gaw.tkMatplot(
-            title="Section vs Class Size",
+            title="Individual Section's Class Size",
             window_width=800,
             window_height=700,
             x_label="Section",
@@ -759,7 +789,7 @@ def section_analysis(
 
     if dic.section_analysis_options["GPA vs Class Size"]:
         plotter = gaw.tkMatplot(
-            title="GPA vs ClassSize per section",
+            title="GPA vs ClassSize per Individual Section",
             window_width=800,
             window_height=700,
             x_label="GPA",
@@ -774,7 +804,7 @@ def section_analysis(
 
     elif dic.section_analysis_options["Section vs Standard Deviation"]:
         plotter = gaw.tkMatplot(
-            title="Section vs Standard Deviation",
+            title="Individual Section's GPA Standard Deviation",
             window_width=800,
             window_height=700,
             x_label="Section",
@@ -789,7 +819,7 @@ def section_analysis(
 
     elif dic.section_analysis_options["Enrollment vs Standard Deviation"]:
         plotter = gaw.tkMatplot(
-            title="Enrollment vs Standard Deviation",
+            title="Enrollment vs GPA Standard Deviation per Individual Section",
             window_width=800,
             window_height=700,
             x_label="Enrollment",
@@ -798,6 +828,20 @@ def section_analysis(
             color=gaw.get_random_values(gaw.get_non_red_colors())[0],
             x_plot="Enrollments",
             y_plot="stddev",
+            df=sectionTable,
+        )
+
+    elif dic.section_analysis_options["Enrollment vs Class Size"]:
+        plotter = gaw.tkMatplot(
+            title="Enrollment vs Class Size per Individual Section",
+            window_width=800,
+            window_height=700,
+            x_label="Enrollment",
+            y_label="Class Size",
+            plot_type="scatter",
+            color=gaw.get_random_values(gaw.get_non_red_colors())[0],
+            x_plot="Enrollments",
+            y_plot="ClassSize",
             df=sectionTable,
         )
         plotter.plot()
@@ -851,7 +895,7 @@ def CourseAnalysis(
 
     if dic.course_analysis_options["Course vs GPA"]:
         plotter = gaw.tkMatplot(
-            title="Course vs GPA",
+            title="Course Average GPA",
             window_width=800,
             window_height=700,
             x_label="Course",
@@ -866,7 +910,7 @@ def CourseAnalysis(
 
     elif dic.course_analysis_options["Course vs Enrollment"]:
         plotter = gaw.tkMatplot(
-            title="Course vs Enrollment",
+            title="# Enrollment per Course",
             window_width=800,
             window_height=700,
             x_label="Course",
@@ -881,7 +925,7 @@ def CourseAnalysis(
 
     elif dic.course_analysis_options["Course vs Section #"]:
         plotter = gaw.tkMatplot(
-            title="GPA vs Section",
+            title="# Sections per Course",
             window_width=800,
             window_height=700,
             x_label="Course",
@@ -896,7 +940,7 @@ def CourseAnalysis(
 
     elif dic.course_analysis_options["Enrollment vs GPA"]:
         plotter = gaw.tkMatplot(
-            title="Enrollment vs GPA",
+            title="Course Enrollment vs Average GPA",
             window_width=800,
             window_height=700,
             x_label="Enrollment",
@@ -911,7 +955,7 @@ def CourseAnalysis(
 
     elif dic.course_analysis_options["Course vs Standard Deviation"]:
         plotter = gaw.tkMatplot(
-            title="Course vs Standard Deviation",
+            title="Course GPA Standard Deviation",
             window_width=800,
             window_height=700,
             x_label="Course",
@@ -926,7 +970,7 @@ def CourseAnalysis(
 
     elif dic.course_analysis_options["GPA vs Standard Deviation"]:
         plotter = gaw.tkMatplot(
-            title="GPA vs Standard Deviation",
+            title="Average GPA vs GPA Standard Deviation",
             window_width=800,
             window_height=700,
             x_label="GPA",
@@ -985,7 +1029,7 @@ def student_level_analysis(
 
     if dic.studentlevel_analysis_options["Student Level vs Enrollments"]:
         plotter = gaw.tkMatplot(
-            title="Student Level vs Enrollment",
+            title="Student Academic Year Enrollment",
             window_width=800,
             window_height=700,
             x_label="Student Level",
@@ -1000,7 +1044,7 @@ def student_level_analysis(
 
     if dic.studentlevel_analysis_options["Student Level vs GPA"]:
         plotter = gaw.tkMatplot(
-            title="Student Level vs GPA",
+            title="Student Academic Year Average GPA",
             window_width=800,
             window_height=700,
             x_label="Student Level",
@@ -1015,7 +1059,7 @@ def student_level_analysis(
 
     if dic.studentlevel_analysis_options["Student Level vs Courses"]:
         plotter = gaw.tkMatplot(
-            title="Student Level vs Courses",
+            title="Student Academic Year # of Courses",
             window_width=800,
             window_height=700,
             x_label="Student Level",
@@ -1077,7 +1121,7 @@ def course_level_analysis(
 
     if dic.courselevel_analysis_options["Course Level vs Course #"]:
         plotter = gaw.tkMatplot(
-            title="Course Level vs Num. Courses",
+            title="Course Level Num. Courses",
             window_width=800,
             window_height=700,
             x_label="Course Level",
@@ -1092,7 +1136,7 @@ def course_level_analysis(
 
     if dic.courselevel_analysis_options["Course Level vs GPA"]:
         plotter = gaw.tkMatplot(
-            title="Course Level vs Avg GPA",
+            title="Course Level Avg GPA",
             window_width=800,
             window_height=700,
             x_label="Course Level",
@@ -1108,7 +1152,7 @@ def course_level_analysis(
 
     if dic.courselevel_analysis_options["Course Level vs Enrollments"]:
         plotter = gaw.tkMatplot(
-            title="Course Level vs Enrollments",
+            title="Course Level # Enrollments",
             window_width=800,
             window_height=700,
             x_label="Course Level",

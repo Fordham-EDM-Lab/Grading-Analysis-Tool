@@ -30,16 +30,47 @@ import tkinter.scrolledtext as tkst
 from functools import partial
 
 
+def popup(self, title="", popup_text=""):
+    self.logger.info(f"Creating popup with title: '{title}'")
+
+    messageBox = tk.Toplevel()
+    label = tk.Label(messageBox, text=title)
+    label.pack()
+    self.logger.debug("Popup title label created")
+
+    show_help_info = tk.Label(messageBox, text=popup_text, justify="left")
+    show_help_info.pack()
+    self.logger.debug("Popup text label created")
+
+    button_close = tk.Button(messageBox, text="Close", command=messageBox.destroy)
+    button_close.pack()
+    self.logger.debug("Close button created for popup")
+
+    self.logger.info("Popup created and displayed successfully")
+
 
 ##For matplotlib uses
 def get_non_red_colors():
     css4_colors = mcolors.CSS4_COLORS
 
-    non_red_or_seaborn_colors = [
-        name for name, hex in css4_colors.items() if "red" not in name.lower()
+    def hex_to_rgb(hex_color):
+        """Convert hex color to RGB."""
+        hex_color = hex_color.lstrip('#')
+        return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+
+    def calculate_brightness(rgb_color):
+        """Calculate the perceived brightness of an RGB color."""
+        r, g, b = rgb_color
+        return (0.299 * r + 0.587 * g + 0.114 * b)
+
+    non_red_colors = [
+        (name, hex) for name, hex in css4_colors.items() 
+        if "red" not in name.lower() and calculate_brightness(hex_to_rgb(hex)) <= 200
     ]
 
-    return non_red_or_seaborn_colors
+
+    non_red_colors = [i[0] for i in non_red_colors]
+    return non_red_colors
 
 
 def get_non_red_colors_name_hex():
@@ -503,6 +534,7 @@ class tkMatplot:
             self.sort_order,
             self.normalize_option,
         )
+        self.help_button = None
 
     def plot(self):
         self.logger.info("Creating plot")
@@ -523,6 +555,8 @@ class tkMatplot:
         current_yplot = self.y_plot
 
 
+
+
         if self.graphing_bin_check:
             df = self.custom_bin_agg(df, self.bin_selected_groups)
             if self.sort_order == "ascending":
@@ -531,6 +565,10 @@ class tkMatplot:
                 df.sort_values(by=current_yplot, ascending=False, inplace=True)
             elif self.sort_order == "random":
                 df = df.sample(frac=1).reset_index(drop=True)
+            elif self.sort_order == "none":
+                df = self.custom_bin_agg(df, self.bin_selected_groups)
+
+
 
             if self.normalize_option != "none":
                 normalize_dataframe_column(df, current_yplot, self.normalize_option)
@@ -546,7 +584,10 @@ class tkMatplot:
                 elif self.plot_type == "scatter":
                     self.ax.scatter(x_data, y_data, color=color, label=bin_name)
                 elif self.plot_type == "bar":
-                    self.ax.bar(x_data, y_data, color=color, label=bin_name)
+                    self.ax.bar(x_data, y_data, color=color, label=bin_name, align='center')
+
+
+
         elif self.numerical_bin_check and self.bin_selected_groups is not None:
             df = self.bin_agg_tuples(df, self.bin_selected_groups, self.x_plot)
             if self.sort_order == "ascending":
@@ -555,6 +596,8 @@ class tkMatplot:
                 df.sort_values(by=current_yplot, ascending=False, inplace=True)
             elif self.sort_order == "random":
                 df = df.sample(frac=1).reset_index(drop=True)
+            elif self.sort_order == "none":
+                df = self.bin_agg_tuples(df, self.bin_selected_groups, self.x_plot)
             if self.normalize_option != "none":
                 normalize_dataframe_column(df, current_yplot, self.normalize_option)
                 current_yplot = f"{self.normalize_option}Normalized{current_yplot}"
@@ -568,6 +611,7 @@ class tkMatplot:
                     self.ax.scatter(x_data, y_data, label=bin_name)
                 elif self.plot_type == "bar":
                     self.ax.bar(x_data, y_data, label=bin_name)
+                    
         else:
             if self.sort_order == "ascending":
                 df.sort_values(by=current_yplot, ascending=True, inplace=True)
@@ -575,6 +619,8 @@ class tkMatplot:
                 df.sort_values(by=current_yplot, ascending=False, inplace=True)
             elif self.sort_order == "random":
                 df = df.sample(frac=1).reset_index(drop=True)
+            elif self.sort_order == "none":
+                df = self.df
 
             if self.normalize_option != "none":
                 normalize_dataframe_column(df, current_yplot, self.normalize_option)
@@ -586,7 +632,9 @@ class tkMatplot:
             elif self.plot_type == "scatter":
                 self.ax.scatter(df[self.x_plot], df[current_yplot], color=self.color)
             elif self.plot_type == "bar":
-                self.ax.bar(df[self.x_plot], self.df[current_yplot], color=self.color)
+                    bars = self.ax.bar(df[self.x_plot], df[current_yplot], color=self.color, align='center')
+                    self.ax.set_xlim(left=-0.5, right=len(df[self.x_plot]) - 0.5)
+                    self.ax.set_ylim(0, df[current_yplot].max() + 1) 
 
 
         self.ax.set_xlabel(self.x_label, fontsize=12)
@@ -594,7 +642,7 @@ class tkMatplot:
         self.ax.set_title(self.title, fontsize=14)
 
         self.ax.grid(True)
-        self.ax.tick_params(axis="x", rotation=45, labelsize=8)
+        self.ax.tick_params(axis="x", rotation=90, labelsize=9)
 
         self.ax.legend()
 
@@ -628,7 +676,6 @@ class tkMatplot:
 
         else:
             self.accept_change_button.config(state="disabled")
-
 
         self.canvas.draw()
 
@@ -801,7 +848,7 @@ class tkMatplot:
 
         self.change_sort_order = tkOptionMenu(
             master=self.right_frame,
-            options=["ascending", "descending", "random"],
+            options=["ascending", "descending", "random", 'none'],
             pre_selected=self.sort_order,
             label_text="Sort Order",
             command=self.set_normal_state,
@@ -824,14 +871,27 @@ class tkMatplot:
 
         self.accept_change_button.grid(row=8, column=2)
 
+        self.help_button = tk.Button(self.right_frame, text='Help', command = self.help_create)
+        self.help_button.grid(row=8, column=5)
+
+
         if self.df[self.x_plot].dtype == "object":
             self.bin_button = tk.Button(self.right_frame, text='Create Bins?', command=self.bin_creation)
             self.bin_button.grid(row=6, column=1)
-            self.graphing_bin_check = True
         else:
-            self.numerical_bin_check = True
             numbin = NumericalBinApp(self.right_frame, row=6, column=1, set_low=min(self.df[self.x_plot]), set_high=max(self.df[self.x_plot]))
             numbin.set_callback(self.on_bins_created)
+
+    def help_create(self):
+        popup(self, title='Help', popup_text=
+            """
+            1. Change Plot Type: Allows you to select between bar, scatter, or line plots\n
+            2. Axis Scale: Scales the axis on the selected option\n
+            3. Sort Order: Sort the graph on the selected option\n
+            4. Change Plot Color: Changes the plot color based on the selected color\n
+            5. Change Plot Style: Changes background plot design\n
+            6. Normalize option: Normalizes the plots yaxis\n
+            """)
 
 
     def bin_creation(self):
