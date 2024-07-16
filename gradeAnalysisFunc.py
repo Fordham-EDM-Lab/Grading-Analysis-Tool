@@ -31,7 +31,7 @@ def file_path(file):
 plt.rcParams.update({"font.size": 14})
 
 # save the data file as df
-df = pd.read_csv(file_path("filteredData.csv"))
+df = pd.read_csv(file_path("data-processed-ready.csv"))
 
 # get useful list of all unique departments, majors, instructors, courses, UniqueCourseID, and students
 uniqueDept = df["Department"].unique()
@@ -690,7 +690,13 @@ def MajorAnalysis(
 
 
 def pandas_df_agg(df, index=["Major"]):
-    # Ensure index is a list
+    """Sections: Unique instances of a CourseID for a given index 
+       Courses: Unique instances of a CourseTitle for a given index
+       GPA: Average GPA for a given index 
+       stddev: Standard deviation of GPA for a given index 
+       kurtosis: Kurtosis of GPA for a given index 
+       skewness: Skewness of GPA for a given index 
+       """
     if isinstance(index, str):
         index = [index]
 
@@ -1181,6 +1187,78 @@ def course_level_analysis(
         print("\n\nFile Created:", f" {save_path}\n\n")
 
     dic.reset_all_false()
+
+def student_analysis(    
+    df,
+    user_directory,
+    min_enrollments=None,
+    max_enrollments=None,
+    csv=False,
+    generate_grade_dist=False,):
+
+    df_agg = pandas_df_agg(df, "SID")
+    df_agg = drop_courses_by_threshold(df_agg, "Courses", min_enrollments, max_enrollments)
+
+    labels = []
+    for i in range(0, 40):
+        start = round(i * 0.1, 1)
+        end = round((i + 1) * 0.1, 1)
+        labels.append(f"{start}-{end}")
+
+    if dic.student_analysis_options["Group of Student vs Average GPA"]:
+        df_agg['GPAGroups'] = pd.cut(df_agg['GPA'], bins=40, labels=labels)
+        df_agg['GPAGroupCounts'] = df_agg['GPAGroups'].map(df_agg['GPAGroups'].value_counts())
+        countvsgpaDF = df_agg.drop_duplicates(subset=['GPAGroups'])
+        countvsgpaDF.sort_values(by='GPAGroups', inplace=True)
+        countvsgpaDF['GPAGroups'] = countvsgpaDF['GPAGroups'].astype(str)
+        countvsgpaDF.to_csv('countvsgpaDF.csv')
+        plotter = gaw.tkMatplot(
+            title="Group of Student vs Average GPA",
+            window_width=800,
+            window_height=700,
+            x_label="GPA Group",
+            y_label="Student Count",
+            plot_type="bar",
+            color=gaw.get_random_values(gaw.get_non_red_colors())[0],
+            x_plot="GPAGroups",
+            y_plot="GPAGroupCounts",
+            df=countvsgpaDF,
+        )
+        plotter.plot()
+
+    if dic.student_analysis_options["Student Course # Taken vs Student Average GPA"]:
+        plotter = gaw.tkMatplot(
+            title="Student Course # Taken vs Student Average GPA",
+            window_width=800,
+            window_height=700,
+            x_label="GPA",
+            y_label="Courses Taken",
+            plot_type="scatter",
+            color=gaw.get_random_values(gaw.get_non_red_colors())[0],
+            x_plot="GPA",
+            y_plot="Courses",
+            df=df_agg,
+        )
+        plotter.plot()
+
+
+    if csv:
+        save_path = os.path.join(user_directory, "course_level_analysis.csv")
+        df_agg.to_csv(save_path, encoding="utf-8-sig")
+        print("\n\nFile Created:", f" {save_path}\n\n")
+
+    if generate_grade_dist:
+        graph_grade_distribution(
+            df=df_agg,
+            column="SID",
+            target_values=df_agg["SID"].unique(),
+            value_colors=gaw.get_non_red_colors(),
+            user_directory=user_directory,
+            csv=csv,
+        )
+
+    dic.reset_all_false()
+
 
 
 def studentCourse_level_analysis(

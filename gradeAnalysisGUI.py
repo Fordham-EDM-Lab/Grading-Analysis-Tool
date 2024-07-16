@@ -228,6 +228,34 @@ class GradingAnalysisTool:
         )
         self.logger.info("Class size threshold widget setup completed")
 
+    def course_num_taken_threshold_widget(self, state="disabled", where=None, row=None, column=None):
+        self.logger.info("Setting up course num taken threshold widget")
+
+        if where is None:
+            where = self.root
+            self.logger.debug("Default 'where' parameter used: self.root")
+
+        self.min_enrollment_threshold = gaw.ThresholdWidget()
+        self.min_enrollment_threshold.generic_thresholds_widget(
+            where=where,
+            state=state,
+            text="Min Courses Taken:",
+            row=row,
+            column=column,
+            help="Enter an integer for a threshold",
+        )
+
+        self.max_enrollment_threshold = gaw.ThresholdWidget()
+        self.max_enrollment_threshold.generic_thresholds_widget(
+            where=where,
+            state=state,
+            text="Max Courses Taken:",
+            row=row + 1,
+            column=column,
+            help="Enter an integer for a threshold",
+        )
+        self.logger.info("Course num taken threshold widget setup completed")
+
     def thresholds_widget(self, state="disabled", where=None, which=None):
         self.logger.info(f"Setting up thresholds widget for: {which}")
         for threshold_widget in [
@@ -479,6 +507,7 @@ class GradingAnalysisTool:
             "Course Analysis": self.command_CrsAnalysis,
             "Section Analysis": self.command_SectionAnalysis,
             "Level Analysis": self.command_LevelAnalysis,
+            "Student Analysis": self.command_student_analysis,
             "Run All Commands": self.command_All_Commands,
             "Quit": self.quit_program,
         }
@@ -725,7 +754,7 @@ class GradingAnalysisTool:
             self.logger.debug(
                 ".history.json does not exist, creating with default values"
             )
-            self.input_file_name = str(file_path("filteredData.csv"))
+            self.input_file_name = str(file_path("data-processed-ready.csv"))
             self.output_directory = str(
                 file_path("grading_analysis_output")
             )
@@ -1553,7 +1582,7 @@ class GradingAnalysisTool:
             self.popup_box_threshold,
             row=1,
             column=4,
-            options_dict={course: False for course in gaf.uniqueMjr.flatten()},
+            options_dict={str(major): False for major in gaf.uniqueMjr.flatten()},
             initial_message="Select Major",
             allow_multiple_entries=True,
         )
@@ -1601,7 +1630,7 @@ class GradingAnalysisTool:
             self.popup_box_threshold,
             row=1,
             column=4,
-            options_dict={course: False for course in gaf.uniqueCrs.flatten()},
+            options_dict={str(section): False for section in gaf.uniqueCrs.flatten()},
             initial_message="Select Course",
             allow_multiple_entries=True,
         )
@@ -1816,6 +1845,37 @@ class GradingAnalysisTool:
         if TFvalues.get("Student-Course Level Analysis"):
             self.command_StudentCourseLevelAnalysis()
             popup.destroy()
+
+    def command_student_analysis(self):
+        self.run_command_button_toggle(state="disabled")
+
+        popup = self.threshold_popup(500, 125)
+
+        self.course_num_taken_threshold_widget('normal', popup, row=0, column=0)
+
+        self.create_analysis_dropdown(where=popup, analysis_options=dic.student_analysis_options, row=0, column=3)
+
+        self.csv_checkbox_widget(
+            where=popup, state="normal", row=1, column=3
+        )
+
+        self.grade_distribution_checkbox(
+            state='normal', where=popup, row=2, column=3
+        )
+
+        self.confirm_threshold_choice(self.run_student_analysis)
+
+    def run_student_analysis(self):
+        gaf.student_analysis(
+            gaf.df,
+            user_directory=self.output_directory,
+            min_enrollments=self.min_enrollment,
+            max_enrollments=self.max_enrollment,
+            csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File")
+        )
+
+        self.hyperlink_filepath()
+        self.reset_gui()
         
         
 

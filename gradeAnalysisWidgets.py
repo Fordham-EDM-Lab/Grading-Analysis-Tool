@@ -494,6 +494,7 @@ class tkMatplot:
         self.x_plot = x_plot
         self.y_plot = y_plot
         self.df = df
+        self.original_index = self.df.index.copy()
         self.title = title
         self.tree = None
         self.highlighted_point = None
@@ -510,7 +511,7 @@ class tkMatplot:
         self.plot_style = "ggplot"
         self.plot_style_options = None
         self.change_sort_order = None
-        self.sort_order = "descending"
+        self.sort_order = "none"
         self.normalize_column_options = None
         self.normalize_option = "none"
         self.data_type = data_type
@@ -560,13 +561,14 @@ class tkMatplot:
         if self.graphing_bin_check:
             df = self.custom_bin_agg(df, self.bin_selected_groups)
             if self.sort_order == "ascending":
+                print(df.columns)
                 df.sort_values(by=current_yplot, ascending=True, inplace=True)
             elif self.sort_order == "descending":
                 df.sort_values(by=current_yplot, ascending=False, inplace=True)
             elif self.sort_order == "random":
                 df = df.sample(frac=1).reset_index(drop=True)
             elif self.sort_order == "none":
-                df = self.custom_bin_agg(df, self.bin_selected_groups)
+                df = df.loc[self.original_index]
 
 
 
@@ -597,7 +599,7 @@ class tkMatplot:
             elif self.sort_order == "random":
                 df = df.sample(frac=1).reset_index(drop=True)
             elif self.sort_order == "none":
-                df = self.bin_agg_tuples(df, self.bin_selected_groups, self.x_plot)
+                df = df.loc[self.original_index]
             if self.normalize_option != "none":
                 normalize_dataframe_column(df, current_yplot, self.normalize_option)
                 current_yplot = f"{self.normalize_option}Normalized{current_yplot}"
@@ -620,7 +622,7 @@ class tkMatplot:
             elif self.sort_order == "random":
                 df = df.sample(frac=1).reset_index(drop=True)
             elif self.sort_order == "none":
-                df = self.df
+                df = df.loc[self.original_index]
 
             if self.normalize_option != "none":
                 normalize_dataframe_column(df, current_yplot, self.normalize_option)
@@ -632,8 +634,7 @@ class tkMatplot:
             elif self.plot_type == "scatter":
                 self.ax.scatter(df[self.x_plot], df[current_yplot], color=self.color)
             elif self.plot_type == "bar":
-                    bars = self.ax.bar(df[self.x_plot], df[current_yplot], color=self.color, align='center')
-                    self.ax.set_xlim(left=-0.5, right=len(df[self.x_plot]) - 0.5)
+                    self.ax.bar(df[self.x_plot], df[current_yplot], color=self.color, align='center')
                     self.ax.set_ylim(0, df[current_yplot].max() + 1) 
 
 
@@ -941,8 +942,8 @@ class tkMatplot:
 
     def custom_bin_agg(self, df, selected_groups):
         grades = ["A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D", "F"]
-        agg_list = ['Enrollments', 'GPA', 'stddev', 'kurtosis', 'skewness', 'Sections', 'Courses'] + grades
-        agg_dict = {agg: "mean" for agg in agg_list}
+        agg_list = ['Enrollments', 'GPA', 'stddev', 'kurtosis', 'skewness', 'Sections', 'Courses', 'GPAGroupCounts'] + grades
+        agg_dict = {agg: "mean" for agg in agg_list if agg in df.columns}
 
         df['Bin'] = None
         df['Color'] = None
@@ -987,7 +988,6 @@ class tkMatplot:
         df_agg = df_agg.join(bin_counts)
         df_agg.reset_index(inplace=True)
 
-        # Optional: Round float columns for better presentation
         float_cols = df_agg.select_dtypes(include="float").columns
         df_agg[float_cols] = df_agg[float_cols].round(3)
 
