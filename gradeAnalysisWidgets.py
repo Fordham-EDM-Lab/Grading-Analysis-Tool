@@ -469,14 +469,17 @@ class tkMatplot:
         x_plot=None,
         y_plot=None,
         data_type=None,
+        output_directory=None,
     ):
+        self.logger = Logger(__name__)
+        self.logger.info("Initializing tkMatplot class")
         self.root = tk.Tk()
         self.root.wm_title(title)
 
-        self.logger = Logger(__name__)
         self.logger.info("Initializing tkMatplot class")
 
         self.root.geometry(f"{window_width}x{window_height}")
+        self.logger.info(f"Setting window size to {window_width}x{window_height}")
 
         self.fig = Figure(figsize=(5, 4), dpi=100)
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.root)
@@ -499,7 +502,7 @@ class tkMatplot:
         self.tree = None
         self.highlighted_point = None
         self.ax = None
-        self.default_directory = None
+        self.default_directory = os.path.join(output_directory, 'Binexport.txt') if output_directory else (os.getcwd(), 'Binexport.txt')
         self.left_frame = None
         self.right_frame = None
         self.plot_options = None
@@ -536,6 +539,7 @@ class tkMatplot:
             self.normalize_option,
         )
         self.help_button = None
+        self.logger.info("tkMatplot class initialized")
 
     def plot(self):
         self.logger.info("Creating plot")
@@ -556,12 +560,14 @@ class tkMatplot:
         current_yplot = self.y_plot
 
 
+        self.logger.info(f"Plotting data using {self.plot_type} plot type")
 
 
         if self.graphing_bin_check:
             df = self.custom_bin_agg(df, self.bin_selected_groups)
+            self.logger.info("Creating plot with custom bin aggregation")
+            self.logger.info(f"Sort order: {self.sort_order}")
             if self.sort_order == "ascending":
-                print(df.columns)
                 df.sort_values(by=current_yplot, ascending=True, inplace=True)
             elif self.sort_order == "descending":
                 df.sort_values(by=current_yplot, ascending=False, inplace=True)
@@ -573,8 +579,10 @@ class tkMatplot:
 
 
             if self.normalize_option != "none":
+                self.logger.info(f"Normalizing data using '{self.normalize_option}' method")
                 normalize_dataframe_column(df, current_yplot, self.normalize_option)
-                current_yplot = f"{self.normalize_option}Normalized{current_yplot}"  
+                current_yplot = f"{self.normalize_option}Normalized{current_yplot}"
+                self.logger.info(f"Normalized column: {current_yplot}")  
             for _, bin_data in df.iterrows():
                 color = bin_data['Color']
                 bin_name = bin_data['Bin']
@@ -591,7 +599,9 @@ class tkMatplot:
 
 
         elif self.numerical_bin_check and self.bin_selected_groups is not None:
+            self.logger.info("Creating plot with numerical bin aggregation")
             df = self.bin_agg_tuples(df, self.bin_selected_groups, self.x_plot)
+            self.logger.info(f"Sort order: {self.sort_order}")
             if self.sort_order == "ascending":
                 df.sort_values(by=current_yplot, ascending=True, inplace=True)
             elif self.sort_order == "descending":
@@ -601,8 +611,10 @@ class tkMatplot:
             elif self.sort_order == "none":
                 df = df.loc[self.original_index]
             if self.normalize_option != "none":
+                self.logger.info(f"Normalizing data using '{self.normalize_option}' method")
                 normalize_dataframe_column(df, current_yplot, self.normalize_option)
                 current_yplot = f"{self.normalize_option}Normalized{current_yplot}"
+                self.logger.info(f"Normalized column: {current_yplot}")
             for bin_data in df.iterrows():
                 bin_name = bin_data[1]['Bin']
                 x_data = [bin_name]
@@ -615,6 +627,8 @@ class tkMatplot:
                     self.ax.bar(x_data, y_data, label=bin_name)
                     
         else:
+            self.logger.info("Creating plot without bin aggregation")
+            self.logger.info(f"Sort order: {self.sort_order}")
             if self.sort_order == "ascending":
                 df.sort_values(by=current_yplot, ascending=True, inplace=True)
             elif self.sort_order == "descending":
@@ -625,8 +639,10 @@ class tkMatplot:
                 df = df.loc[self.original_index]
 
             if self.normalize_option != "none":
+                self.logger.info(f"Normalizing data using '{self.normalize_option}' method")
                 normalize_dataframe_column(df, current_yplot, self.normalize_option)
-                current_yplot = f"{self.normalize_option}Normalized{current_yplot}"  
+                current_yplot = f"{self.normalize_option}Normalized{current_yplot}"
+                self.logger.info(f"Normalized column: {current_yplot}")  
             if self.plot_type == "line":
                 self.ax.plot(
                     df[self.x_plot], df[current_yplot], color=self.color, marker="o"
@@ -773,6 +789,7 @@ class tkMatplot:
             sort_order,
             normalize_option,
         ) = self.reset_tuple
+        self.logger.info("Resetting plot to initial state")
 
         self.root.wm_title(title)
         self.root.geometry(f"{window_width}x{window_height}")
@@ -796,9 +813,11 @@ class tkMatplot:
         self.plot()
 
     def change_graph_options(self):
+        self.logger.info("Creating graph options")
         self.right_frame = tk.Frame(self.root)
         self.right_frame.pack(side=tk.RIGHT, fill="both", expand=True)
 
+        self.logger.info("Creating Plot Type Options")
         self.plot_options = tkOptionMenu(
             master=self.right_frame,
             options=["line", "scatter", "bar"],
@@ -807,7 +826,9 @@ class tkMatplot:
             command=self.set_normal_state,
         )
         self.plot_options.grid(row=1, column=1, padx=(0, 20))
+        self.logger.info("Plot Type Options created")
 
+        self.logger.info("Creating Plot Color Options")
         self.plot_colors = tkOptionMenu(
             master=self.right_frame,
             options=get_random_values(get_non_red_colors()),
@@ -817,7 +838,9 @@ class tkMatplot:
             colors=get_non_red_colors_name_hex(),
         )
         self.plot_colors.grid(row=1, column=3, padx=(20, 0))
+        self.logger.info("Plot Color Options created")
 
+        self.logger.info("Creating Axis Scale Options")
         self.scale_options = tkOptionMenu(
             master=self.right_frame,
             options=[
@@ -831,7 +854,9 @@ class tkMatplot:
             command=self.set_normal_state,
         )
         self.scale_options.grid(row=3, column=1)
+        self.logger.info("Axis Scale Options created")
 
+        self.logger.info("Creating Plot Style Options")
         self.plot_style_options = tkOptionMenu(
             master=self.right_frame,
             options=get_random_values(get_nonseaborn_styles()),
@@ -840,6 +865,8 @@ class tkMatplot:
             command=self.set_normal_state,
         )
         self.plot_style_options.grid(row=3, column=3)
+        self.logger.info("Plot Style Options created")
+
 
         self.accept_change_button = tk.Button(
             self.right_frame,
@@ -847,6 +874,7 @@ class tkMatplot:
             command=self.change_plot_type,
         )
 
+        self.logger.info("Creating Sort Order Options")
         self.change_sort_order = tkOptionMenu(
             master=self.right_frame,
             options=["ascending", "descending", "random", 'none'],
@@ -856,7 +884,9 @@ class tkMatplot:
         )
 
         self.change_sort_order.grid(row=5, column=1)
+        self.logger.info("Sort Order Options created")
 
+        self.logger.info("Creating Normalize Column Options")
         self.normalize_column_options = tkOptionMenu(
             master=self.right_frame,
             options=["none", "minmax", "zscore", "robust", "maxabs", "log"],
@@ -864,6 +894,7 @@ class tkMatplot:
             label_text="Normalize Option",
             command=self.set_normal_state,
         )
+        self.logger.info("Normalize Column Options created")
 
         self.normalize_column_options.grid(row=5, column=3)
 
@@ -877,13 +908,18 @@ class tkMatplot:
 
 
         if self.df[self.x_plot].dtype == "object":
+            self.logger.info("Creating Bin Button")
             self.bin_button = tk.Button(self.right_frame, text='Create Bins?', command=self.bin_creation)
             self.bin_button.grid(row=6, column=1)
+            self.logger.info("Bin Button created")
         else:
+            self.logger.info("Creating Numerical Bin Button")
             numbin = NumericalBinApp(self.right_frame, row=6, column=1, set_low=min(self.df[self.x_plot]), set_high=max(self.df[self.x_plot]))
             numbin.set_callback(self.on_bins_created)
+            self.logger.info("Numerical Bin Button created")
 
     def help_create(self):
+        self.logger.info("Creating Help Popup")
         popup(self, title='Help', popup_text=
             """
             1. Change Plot Type: Allows you to select between bar, scatter, or line plots\n
@@ -893,10 +929,12 @@ class tkMatplot:
             5. Change Plot Style: Changes background plot design\n
             6. Normalize option: Normalizes the plots yaxis\n
             """)
+        self.logger.info("Help Popup created")
 
 
     def bin_creation(self):
-        bin_popup = BinPopup(self.root, {key: False for key in self.df[self.x_plot]}, callback=self.on_bins_created)
+        self.logger.info("Creating Bin Popup")
+        bin_popup = BinPopup(self.root, {key: False for key in self.df[self.x_plot]}, callback=self.on_bins_created, path=self.default_directory)
 
     def on_bins_created(self, selected_groups):
         if self.df[self.x_plot].dtype == "object":
@@ -911,11 +949,15 @@ class tkMatplot:
         self.accept_change_button.config(state=tk.NORMAL)
 
     def set_toolbar(self):
+        self.logger.info("Creating toolbar")
         self.toolbar = NavigationToolbar2Tk(self.canvas, self.root, pack_toolbar=False)
         self.toolbar.pack(side=tk.TOP, fill=tk.X)
         self.toolbar.update()
+        self.logger.info("Toolbar created")
+        
 
     def add_table(self, df,xplot, yplot):
+        self.logger.info("Creating table")
         self.left_frame = tk.Frame(self.root)
         self.left_frame.pack(side=tk.LEFT, fill="both", expand=True)
         self.tree = ttk.Treeview(self.left_frame)
@@ -929,25 +971,32 @@ class tkMatplot:
         self.tree.heading("X-Value", text=self.x_label, anchor=tk.W)
         self.tree.heading("Y-Value", text=self.y_label, anchor=tk.W)
 
+        self.logger.info("Inserting data into table")
         for i, (x, y) in enumerate(zip(df[xplot], df[yplot])):
             self.tree.insert(parent="", index="end", iid=i, text="", values=(x, y))
 
         self.tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         self.tree.bind("<<TreeviewSelect>>", partial(self.on_tree_selection_change, df, xplot, yplot))
+        self.logger.info("Table created")
 
     def update_table(self, df, xplot, yplot):
+        self.logger.info("Updating table")
         self.tree.delete(*self.tree.get_children())
         for i, (x, y) in enumerate(zip(df[xplot], df[yplot])):
             self.tree.insert(parent="", index="end", iid=i, text="", values=(x, y))
+        self.logger.info("Table updated")
 
     def custom_bin_agg(self, df, selected_groups):
+        self.logger.info("Aggregating data based on selected groups")
         grades = ["A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D", "F"]
         agg_list = ['Enrollments', 'GPA', 'stddev', 'kurtosis', 'skewness', 'Sections', 'Courses', 'GPAGroupCounts'] + grades
         agg_dict = {agg: "mean" for agg in agg_list if agg in df.columns}
+        self.logger.info("Aggregated data dict ready")
 
         df['Bin'] = None
         df['Color'] = None
 
+        self.logger.info("Assigning bins and colors to data")
         for group, color in selected_groups:
             bin_name = "[" + ", ".join(group) + "]"
             for item in group:
@@ -959,6 +1008,7 @@ class tkMatplot:
 
         colors = df[['Bin', 'Color']].drop_duplicates().set_index('Bin')
 
+        self.logger.info("Grouping data based on bins")
         df_agg = df.groupby('Bin', observed=True).agg(agg_dict).reset_index()
 
         bin_counts = df.groupby('Bin').size().reset_index(name='bin_count')
@@ -969,20 +1019,25 @@ class tkMatplot:
 
         float_cols = df_agg.select_dtypes(include="float").columns
         df_agg[float_cols] = df_agg[float_cols].round(3)
+        self.logger.info("Data grouped and aggregated successfully")
 
         return df_agg
     
 
     def bin_agg_tuples(self, df, bin_tuples, x_plot):
+        self.logger.info("Aggregating data based on numerical bin tuples")
         agg_list=['Enrollments', 'GPA', 'stddev', 'kurtosis', 'skewness', 'Sections', 'Courses']
         grades = ["A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D", "F"]
         all_agg_cols = agg_list + grades
         agg_dict = {col: "mean" for col in all_agg_cols}
+        self.logger.info("Aggregated data dict ready")
         edges = [t[0] for t in bin_tuples] + [bin_tuples[-1][1]]
 
+        self.logger.info("Assigning bins to data")
         df['Bin'] = pd.cut(df[x_plot], bins=edges, right=False,
                         labels=[f"{t[0]}-{t[1]}" for t in bin_tuples], include_lowest=True)
 
+        self.logger.info("Grouping data based on bins")
         df_agg = df.groupby('Bin', observed=True).agg(agg_dict)
         bin_counts = df.groupby('Bin').size().rename('bin_count')
         df_agg = df_agg.join(bin_counts)
@@ -995,6 +1050,7 @@ class tkMatplot:
 
 
     def on_tree_selection_change(self,df, xplot, yplot ,event):
+        self.logger.info("Tree selection changed")
         selected_items = self.tree.selection()
         if selected_items:
             index = int(selected_items[0])
@@ -1009,6 +1065,7 @@ class tkMatplot:
         self.highlighted_point = self.ax.plot(
             x, y, marker="o", markersize=10, color="red"
         )  # Customize marker size and color as needed
+        self.logger.info(f"Highlighted point at index {index} with x={x}, y={y}")
 
         self.canvas.draw()
 
@@ -1017,8 +1074,8 @@ class tkMatplot:
             if self.highlighted_point:
                 self.highlighted_point[0].remove()
                 self.highlighted_point = None
+                self.logger.info("Highlight cleared")
                 self.canvas.draw()
-            self.logger.info("Highlight cleared")
         except Exception as e:
             self.logger.error(f"Error clearing highlight: {e}")
 
@@ -1026,6 +1083,7 @@ class tkMatplot:
 class NumericalBinApp:
     def __init__(self, root, row=0, column=0, set_low=None, set_high=None):
         self.root = root
+        self.logger = Logger(__name__)
         self.set_low = set_low
         self.set_high = set_high
 
@@ -1034,9 +1092,11 @@ class NumericalBinApp:
         self.callback = None  # Initialize callback function to None
 
     def create_widgets(self, row, column):
+        self.logger.info("Creating numerical bin widgets")
         input_frame = ttk.Frame(self.root)
         input_frame.grid(row=row, column=column, padx=5, pady=5, sticky="w")  # Stick to west (left)
 
+        self.logger.info("Creating Min, Max, and Step input fields")
         ttk.Label(input_frame, text="Min:").grid(row=0, column=0, padx=5, pady=5)
         self.min_entry = ttk.Entry(input_frame, width=10)
         self.min_entry.insert(0, self.set_low)
@@ -1054,12 +1114,15 @@ class NumericalBinApp:
         # Generate button
         self.generate_button = ttk.Button(input_frame, text="Generate", command=self.generate_bins)
         self.generate_button.grid(row=0, column=6, padx=5, pady=5)
+        self.logger.info("Numerical bin widgets created")
 
     def set_callback(self, callback):
+        self.logger.info(f"Setting callback function to {callback}")
         self.callback = callback
     
     def generate_bins(self):
         try:
+            self.logger.info("Generating numerical bins")
             min_value = float(self.min_entry.get())
             max_value = float(self.max_entry.get())
             step_value = float(self.step_entry.get())
@@ -1069,19 +1132,24 @@ class NumericalBinApp:
                 self.callback(bins)
         except ValueError:
             if self.callback:  # If a callback is set, let it handle errors
+                self.logger.error("Error generating numerical bins")
                 self.callback([])  # Pass an empty list to indicate error      
 
     def numerical_bin(self, start, end, step):
+        self.logger.info("Creating numerical bins")
         edges = np.arange(start, end + step, step)
         return [(round(edges[i], 2), round(edges[i + 1], 2)) for i in range(len(edges) - 1)]
 
 
 class BinPopup():
-    def __init__(self, master, options_dict, callback=None):
+    def __init__(self, master, options_dict, callback=None, path=None):
+        self.logger = Logger(__name__)
+        self.logger.info("Creating BinPopup instance")
         self.master = master
         self.options_dict = options_dict
         self.popup = tk.Toplevel(master=master)
         self.popup.title('Create Bins for Grouping')
+        self.path = path if path else os.path.join(os.getcwd(), 'export.txt')
         self.window_length = 500
         self.window_height = 500
         self.popup.geometry(f"{self.window_length}x{self.window_height}")
@@ -1097,6 +1165,7 @@ class BinPopup():
 
 
     def create_scrollable_area(self):
+        self.logger.info("Creating scrollable area")
         # Create a canvas widget
         self.canvas = tk.Canvas(self.popup)
         self.canvas.grid(row=0, column=0, sticky='nsew')
@@ -1120,12 +1189,14 @@ class BinPopup():
         self.bind_scroll_events()
 
     def bind_scroll_events(self):
+        self.logger.info("Binding scroll events")
         self.canvas.bind_all("<MouseWheel>", self.on_mouse_wheel)
         self.canvas.bind_all("<Button-4>", self.on_mouse_wheel)
         self.canvas.bind_all("<Button-5>", self.on_mouse_wheel)
 
 
     def on_mouse_wheel(self, event):
+        self.logger.info("Mouse wheel event detected")
         if event.num == 5 or event.delta == -120:  # Scroll down
             self.canvas.yview_scroll(1, "units")
         elif event.num == 4 or event.delta == 120:  # Scroll up
@@ -1133,9 +1204,11 @@ class BinPopup():
 
 
     def create_bin_options(self):
+        self.logger.info("Creating bin options")
         self.group_frame = tk.Frame(self.scrollable_frame)
         self.group_frame.grid(row=self.current_row, column=self.current_col, sticky='nsew', padx=10, pady=10)
 
+        self.logger.info("Creating Plot Color Options")
         self.plot_colors = tkOptionMenu(
             master=self.group_frame,
             options=get_random_values(get_non_red_colors()),
@@ -1145,13 +1218,15 @@ class BinPopup():
         )
         self.plot_colors.grid(row=0, column=0)
 
+        self.logger.info("Creating Dropdown Options")
         self.dropdown = tkDropdown(
             master=self.group_frame, options_dict=self.options_dict, row=1, column=0,
             initial_message='Create a Group', allow_multiple_entries=True,
-            filename='group_options', scrolltextbox_height=5, scrolltextbox_width=20
+            filename='group_options', scrolltextbox_height=5, scrolltextbox_width=20, path=self.path
         )
         self.dropdown.dropdown_grid(padx=60)
 
+        self.logger.info("Creating Add Group and Accept buttons")
         self.add_group_button = tk.Button(self.group_frame, text="Add Group", command=self.add_group, state='disabled')
         self.add_group_button.grid(row=4, column=0, padx=10)
 
@@ -1159,6 +1234,7 @@ class BinPopup():
         self.accept_button.grid(row=5, column=0, padx=10)
 
     def add_group(self):
+        self.logger.info("Adding group")
         selected_options = self.dropdown.get_selected_options()
         selected_color = self.plot_colors.get_selected_option()
         if selected_options and selected_color:
@@ -1181,9 +1257,11 @@ class BinPopup():
         self.accept_button.config(state='normal')
 
     def get_selected_groups(self):
+        self.logger.info("Getting selected groups")
         return self.groups
 
     def accept(self):
+        self.logger.info("Accepting selected groups")
         selected_options = self.dropdown.get_selected_options()
         selected_color = self.plot_colors.get_selected_option()
         if selected_options and selected_color:
@@ -1212,6 +1290,7 @@ class tkOptionMenu(tk.Frame):
         **kwargs,
     ):
         super().__init__(master, *args, **kwargs)
+        self.logger = Logger(__name__)
         self.colors = (
             colors if colors else {}
         )  # Default to empty dict if no colors provided
@@ -1244,10 +1323,12 @@ class tkOptionMenu(tk.Frame):
         return brightness < 120
 
     def update_command(self, *args):
+        self.logger.info("Updating command")
         if callable(self.command):
             self.command()
 
     def colorize_options(self):
+        self.logger.info("Colorizing options")
         menu = self.option_menu["menu"]
         for index, label in enumerate(
             menu.entrycget(index, "label") for index in range(menu.index("end") + 1)
@@ -1278,7 +1359,9 @@ class tkDropdown():
         filename="textfile",
         scrolltextbox_width = 20,
         scrolltextbox_height = 1,
+        path=None,
     ):
+        self.logger = Logger(__name__)
         self.master = master
         self.allow_multiple_entries = allow_multiple_entries
         self.options_dict = options_dict
@@ -1287,7 +1370,7 @@ class tkDropdown():
         self.column = column
         self.initial_message = initial_message
         self.command = None
-        self.path = os.path.join(os.getcwd(), filename + ".txt")
+        self.path = path if path else os.path.join(os.getcwd(), filename + ".txt")
         self.scrolltextbox_width = scrolltextbox_width
         self.scrolltextbox_height = scrolltextbox_height
 
@@ -1300,10 +1383,12 @@ class tkDropdown():
             self.create_selected_options_display()
 
     def dropdown_grid(self, **kwargs):
+        self.logger.info("Creating dropdown grid")
         self.dropdown.grid(**kwargs)
 
 
     def create_combobox(self):
+        self.logger.info("Creating combobox")
         self.dropdown = autocomplete.AutocompleteCombobox(
             self.master, completevalues=list(self.options_dict.keys())
         )
@@ -1321,6 +1406,7 @@ class tkDropdown():
         self.dropdown.bind("<Tab>", self.update_dict)
 
     def create_selected_options_display(self):
+        self.logger.info("Creating selected options display")
         self.selected_options_label = tkScrolledtextBox(
             self.master, self.row + 1, self.column,
               self.scrolltextbox_width,
@@ -1335,6 +1421,7 @@ class tkDropdown():
 
     def update_command(self, *args):
         selected_key = self.dropdown.get()
+        
         if (
             selected_key in self.options_dict
             and selected_key not in self.selected_options
@@ -1362,19 +1449,23 @@ class tkDropdown():
         return self.selected_options
 
     def isEmpty(self):
+        self.logger.info("Checking if selected options is empty")
         return not self.selected_options
 
     def clearList(self):
+        self.logger.info("Clearing selected options")
         self.selected_options.clear()
         self.selected_options_label.config(text="")
 
     def destroy(self):
+        self.logger.info("Destroying dropdown")
         self.dropdown.destroy()
         if self.allow_multiple_entries:
             self.selected_options_label.destroy()
         self.selected_options.clear()
 
-    def export_to_txt(self):   
+    def export_to_txt(self):  
+        self.logger.info("Exporting selected options to text file") 
         if self.allow_multiple_entries:
             self.selected_options_label.export_to_txt(self.path)
             print("\n\nFile Created:", f" {self.path}\n\n")

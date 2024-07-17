@@ -500,7 +500,7 @@ class GradingAnalysisTool:
         self.logger.info("Setting up commands for GradingAnalysisTool")
 
         self.commands_directory = {
-            "1 Major & Department Analysis": self.command_MajorDepartment,
+            # "1 Major & Department Analysis": self.command_MajorDepartment,
             "Department Analysis": self.command_DeptAnalysis,
             "Instructor Analysis": self.command_InstAnalysis,
             "Major Analysis": self.command_MjrAnalysis,
@@ -1336,48 +1336,48 @@ class GradingAnalysisTool:
     # commands
 
     # What happens after gpa command is confirAnalysis
-    def command_MajorDepartment(self):
-        self.logger.info("Executing GPA command")
-        self.commands_listbox.grid_forget()
+    # def command_MajorDepartment(self):
+    #     self.logger.info("Executing GPA command")
+    #     self.commands_listbox.grid_forget()
 
-        self.run_command_button_toggle(state="disabled")
-        # creates listboxes for selection and waits for confirm to be clicked
-        self.departments_listbox_widget(row=3, column=1)
-        self.majors_listbox_widget(row=4, column=1)
-        self.thresholds_on_root(
-            which="sections_enrollment",
-        )
-        self.csv_checkbox_widget(state="normal", row=2, column=0)
-        self.grade_distribution_checkbox(state="normal", row=2, column=2)
+    #     self.run_command_button_toggle(state="disabled")
+    #     # creates listboxes for selection and waits for confirm to be clicked
+    #     self.departments_listbox_widget(row=3, column=1)
+    #     self.majors_listbox_widget(row=4, column=1)
+    #     self.thresholds_on_root(
+    #         which="sections_enrollment",
+    #     )
+    #     self.csv_checkbox_widget(state="normal", row=2, column=0)
+    #     self.grade_distribution_checkbox(state="normal", row=2, column=2)
 
-        # runs analysis
-        self.confirm_department_major_selections()
-        self.logger.debug("GPA command setup completed")
+    #     # runs analysis
+    #     self.confirm_department_major_selections()
+    #     self.logger.debug("GPA command setup completed")
 
-    def run_MajorDepartment_analysis(self):
-        self.logger.info("Running GPA analysis")
+    # def run_MajorDepartment_analysis(self):
+    #     self.logger.info("Running GPA analysis")
 
-        self.major = self.majors_listbox.item(self.majors_listbox.selection())
-        self.dept = self.departments_listbox.item(self.departments_listbox.selection())
+    #     self.major = self.majors_listbox.item(self.majors_listbox.selection())
+    #     self.dept = self.departments_listbox.item(self.departments_listbox.selection())
 
-        gaf.MajorDepartmentAnalysis(
-            gaf.df,
-            self.dept,
-            self.major,
-            user_directory=self.output_directory,
-            min_enrollments=self.min_enrollment,
-            max_enrollments=self.max_enrollment,
-            min_sections=self.min_sections,
-            max_sections=self.max_sections,
-            csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"),
-            generate_grade_dist=self.grade_dist_checkbox.get_dict_of_checkbox().get(
-                "Generate Grade Distribution?"
-            ),
-        )
+    #     gaf.MajorDepartmentAnalysis(
+    #         gaf.df,
+    #         self.dept,
+    #         self.major,
+    #         user_directory=self.output_directory,
+    #         min_enrollments=self.min_enrollment,
+    #         max_enrollments=self.max_enrollment,
+    #         min_sections=self.min_sections,
+    #         max_sections=self.max_sections,
+    #         csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"),
+    #         generate_grade_dist=self.grade_dist_checkbox.get_dict_of_checkbox().get(
+    #             "Generate Grade Distribution?"
+    #         ),
+    #     )
 
-        self.hyperlink_filepath()
-        self.reset_gui()
-        self.logger.info("GUI reset after GPA analysis")
+    #     self.hyperlink_filepath()
+    #     self.reset_gui()
+    #     self.logger.info("GUI reset after GPA analysis")
 
     def run_unique_analysis(self):
         self.logger.info(
@@ -1847,6 +1847,7 @@ class GradingAnalysisTool:
             popup.destroy()
 
     def command_student_analysis(self):
+        self.logger.info("Executing Student Analysis command")
         self.run_command_button_toggle(state="disabled")
 
         popup = self.threshold_popup(500, 125)
@@ -1864,8 +1865,10 @@ class GradingAnalysisTool:
         )
 
         self.confirm_threshold_choice(self.run_student_analysis)
+        self.logger.info("Student Analysis command setup completed")
 
     def run_student_analysis(self):
+        self.logger.info("Running student analysis")
         gaf.student_analysis(
             gaf.df,
             user_directory=self.output_directory,
@@ -1875,6 +1878,7 @@ class GradingAnalysisTool:
         )
 
         self.hyperlink_filepath()
+        self.logger.info("Student analysis completed")
         self.reset_gui()
         
         
