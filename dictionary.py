@@ -12,6 +12,7 @@ major_analysis_options = {
     "Major vs Enrollment": False,
     "Major vs Course #": False,
     "Major vs Section #": False,
+    "GPA vs Enrollment": False,
     "Standard Deviation vs Enrollment": False,
 }
 
@@ -21,13 +22,13 @@ section_analysis_options = {
     "GPA vs Class Size": False,
     "Section vs Standard Deviation": False,
     "Enrollment vs Standard Deviation": False,
+    "Enrollment vs Class Size": False,
 }
 
 instructor_analysis_options = {
     "Instructor vs GPA": False,
     "Instructor vs Enrollment": False,
-    "GPA vs Enrollment": False,
-    "Course(By Instructor) vs GPA": False,
+    "Enrollment vs GPA": False,
     "Instructor vs Section #": False,
     "Instructor vs Course #": False,
     "Instructor vs Standard Deviation": False,
@@ -59,10 +60,15 @@ studentcourse_analysis_options = {
     "Student-Course vs GPA":False,
 }
 
+student_analysis_options = {
+    "Group of Student vs Average GPA": False,
+    "Student Course # Taken vs Student Average GPA": False,
+}
+
 def reset_all_false():
     options = [studentcourse_analysis_options, courselevel_analysis_options, studentlevel_analysis_options, 
                department_analysis_options, instructor_analysis_options, section_analysis_options,
-               major_analysis_options, course_analysis_options]
+               major_analysis_options, course_analysis_options, student_analysis_options]
     
     for option in options:
             option.update({key: False for key in option})
