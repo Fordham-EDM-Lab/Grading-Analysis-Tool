@@ -4,6 +4,7 @@ fonttools==4.47.0
 joblib==1.3.2
 kiwisolver==1.4.5
 matplotlib==3.8.2
+mimesis==17.0.0
 mplcursors==0.5.3
 numpy==1.26.2
 packaging==23.2

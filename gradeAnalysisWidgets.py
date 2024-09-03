@@ -289,11 +289,12 @@ class ThresholdWidget:
         self.logger.info(
             f"Creating threshold widget with label '{text}' at row {row}, column {column}"
         )
+        x_pad = len(text) * 7
         self.label = tk.Label(where, text=text)
         self.label.grid(row=row, column=column, sticky=tk.W)
         self.entry = tk.Entry(where, width=3)
         self.entry.config(state=state)
-        self.entry.grid(row=row, column=column + 1, sticky=tk.W)
+        self.entry.grid(row=row, column=column, sticky=tk.W, padx=(x_pad, 0))
         self.bind_tooltip_events(self.entry, help)
         self.logger.debug("Threshold widget created and configured")
 
@@ -629,6 +630,7 @@ class tkMatplot:
         else:
             self.logger.info("Creating plot without bin aggregation")
             self.logger.info(f"Sort order: {self.sort_order}")
+            self.original_index = df.index.copy()
             if self.sort_order == "ascending":
                 df.sort_values(by=current_yplot, ascending=True, inplace=True)
             elif self.sort_order == "descending":
@@ -675,6 +677,7 @@ class tkMatplot:
             xplot=self.x_plot
 
         self.fig.canvas.mpl_connect("motion_notify_event", partial(self.on_move, df, xplot, current_yplot))
+        self.fig.canvas.mpl_connect("axes_leave_event", self.axis_leave_event)
 
         if self.left_frame is not None:
             self.left_frame.destroy()
@@ -693,8 +696,20 @@ class tkMatplot:
 
         else:
             self.accept_change_button.config(state="disabled")
+        
+        self.fig.tight_layout(rect=[1,1,1,1])
+
 
         self.canvas.draw()
+
+    def axis_leave_event(self, event):
+        if hasattr(self, "hover_annotation") and self.hover_annotation is not None:
+            try:
+                self.hover_annotation.remove()
+                self.hover_annotation = None
+                self.fig.canvas.draw_idle()
+            except ValueError:
+                pass
 
     def on_move(self,df, xplot, yplot ,event):
         ax = None
@@ -742,8 +757,11 @@ class tkMatplot:
         row_data = row_data.drop(labels=unwanted_col, errors="ignore")
         display_text = "\n".join([f"{col}: {val}" for col, val in row_data.items()])
 
-        if hasattr(self, "hover_annotation"):
-            self.hover_annotation.remove()
+        if hasattr(self, "hover_annotation") and self.hover_annotation is not None:
+            try:
+                self.hover_annotation.remove()
+            except ValueError:
+                pass
 
         self.hover_annotation = ax.annotate(
             display_text,
@@ -1020,6 +1038,7 @@ class tkMatplot:
         float_cols = df_agg.select_dtypes(include="float").columns
         df_agg[float_cols] = df_agg[float_cols].round(3)
         self.logger.info("Data grouped and aggregated successfully")
+        self.original_index = df_agg.index.copy()
 
         return df_agg
     
@@ -1045,6 +1064,7 @@ class tkMatplot:
 
         float_cols = df_agg.select_dtypes(include="float").columns
         df_agg[float_cols] = df_agg[float_cols].round(3)
+        self.original_index = df_agg.index.copy()
 
         return df_agg
 

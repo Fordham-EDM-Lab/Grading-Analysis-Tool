@@ -329,13 +329,16 @@ def DepartmentAnalysis(
     csv=False,
     generate_grade_dist=False,
 ):
+    
     deptTable = pandas_df_agg(df, "Department")
+
     deptTable = drop_courses_by_threshold(
         deptTable, "Enrollments", min_enrollments, max_enrollments
     )
     deptTable = drop_courses_by_threshold(
         deptTable, "Sections", min_sections, max_sections
     )
+
 
     target_values = list(target_values)
 
@@ -353,6 +356,7 @@ def DepartmentAnalysis(
             x_plot="Department",
             y_plot="GPA",
             df=deptTable,
+            output_directory=user_directory,
         )
         plotter.plot()
 
@@ -368,6 +372,7 @@ def DepartmentAnalysis(
             x_plot="Department",
             y_plot="Enrollments",
             df=deptTable,
+            output_directory=user_directory,
         )
         plotter.plot()
     
@@ -383,6 +388,7 @@ def DepartmentAnalysis(
             x_plot="Department",
             y_plot="Sections",
             df=deptTable,
+            output_directory=user_directory,
         )
         plotter.plot()
 
@@ -398,6 +404,7 @@ def DepartmentAnalysis(
             x_plot="Department",
             y_plot="Courses",
             df=deptTable,
+            output_directory=user_directory,
         )
         plotter.plot()
 
@@ -491,6 +498,7 @@ def InstructorAnalysis(
             x_plot="FacultyID",
             y_plot="GPA",
             df=instTable,
+            output_directory=user_directory,
         )
         plotter.plot()
 
@@ -506,6 +514,7 @@ def InstructorAnalysis(
             x_plot="FacultyID",
             y_plot="Enrollments",
             df=instTable,
+            output_directory=user_directory,
         )
         plotter.plot()
 
@@ -521,6 +530,7 @@ def InstructorAnalysis(
             x_plot="FacultyID",
             y_plot="Sections",
             df=instTable,
+            output_directory=user_directory,
         )
         plotter.plot()
 
@@ -536,6 +546,7 @@ def InstructorAnalysis(
             x_plot="FacultyID",
             y_plot="Courses",
             df=instTable,
+            output_directory=user_directory
         )
         plotter.plot()
 
@@ -551,20 +562,21 @@ def InstructorAnalysis(
             x_plot="FacultyID",
             y_plot="stddev",
             df=instTable,
+            output_directory=user_directory,
         )
         plotter.plot()
 
-    if dic.instructor_analysis_options["GPA vs Enrollment"]:
+    if dic.instructor_analysis_options["Enrollment vs GPA"]:
         plotter = gaw.tkMatplot(
             title="Instructor's Average GPA vs Total Enrollment",
             window_width=800,
             window_height=700,
-            x_label="Average GPA",
-            y_label="Enrollment",
+            x_label="Enrollment #",
+            y_label="Instructor GPA",
             plot_type="scatter",
             color=gaw.get_random_values(gaw.get_non_red_colors())[0],
-            x_plot="GPA",
-            y_plot="Enrollments",
+            x_plot="Enrollments",
+            y_plot="GPA",
             df=instTable,
         )
         plotter.plot()
@@ -607,6 +619,7 @@ def MajorAnalysis(
             x_plot="Major",
             y_plot="GPA",
             df=mjrTable,
+            output_directory=user_directory,
         )
         plotter.plot()
 
@@ -622,6 +635,7 @@ def MajorAnalysis(
             x_plot="Major",
             y_plot="Enrollments",
             df=mjrTable,
+            output_directory=user_directory
         )
         plotter.plot()
 
@@ -637,6 +651,7 @@ def MajorAnalysis(
             x_plot="Major",
             y_plot="Sections",
             df=mjrTable,
+            output_directory=user_directory
         )
         plotter.plot()
 
@@ -652,6 +667,23 @@ def MajorAnalysis(
             x_plot="Major",
             y_plot="Courses",
             df=mjrTable,
+            output_directory=user_directory
+        )
+        plotter.plot()
+
+    if dic.major_analysis_options["GPA vs Enrollment"]:
+        plotter = gaw.tkMatplot(
+            title="Major's Average GPA vs Major's Total Enrollment",
+            window_width=800,
+            window_height=700,
+            x_label="GPA",
+            y_label="Enrollment",
+            plot_type="scatter",
+            color=gaw.get_random_values(gaw.get_non_red_colors())[0],
+            x_plot="GPA",
+            y_plot="Enrollments",
+            df=mjrTable,
+            output_directory=user_directory
         )
         plotter.plot()
 
@@ -667,6 +699,7 @@ def MajorAnalysis(
             x_plot="stddev",
             y_plot="Enrollments",
             df=mjrTable,
+            output_directory=user_directory
         )
         plotter.plot()
 
@@ -751,11 +784,14 @@ def section_analysis(
         how="left",
     )
 
+    sectionTable['UniqueCourseID'] = sectionTable['UniqueCourseID'].astype(str)
     sectionTable = sectionTable.drop_duplicates(subset=["UniqueCourseID"])
     sectionTable = sectionTable[sectionTable["CourseTitle"].isin(target_courses)]
+
     sectionTable = drop_courses_by_threshold(
-        sectionTable, "ClassSize", min_enrollments, max_enrollments
+        sectionTable, "Enrollments", min_enrollments, max_enrollments
     )
+
     sectionTable = drop_courses_by_threshold(
         sectionTable, "semyear", min_sections, max_sections
     )
@@ -775,6 +811,7 @@ def section_analysis(
             x_plot="UniqueCourseID",
             y_plot="GPA",
             df=sectionTable,
+            output_directory=user_directory,
         )
         plotter.plot()
 
@@ -790,6 +827,7 @@ def section_analysis(
             x_plot="UniqueCourseID",
             y_plot="Enrollments",
             df=sectionTable,
+            output_directory=user_directory,
         )
         plotter.plot()
 
@@ -805,10 +843,12 @@ def section_analysis(
             x_plot="GPA",
             y_plot="Enrollments",
             df=sectionTable,
+            output_directory=user_directory,
         )
         plotter.plot()
 
     elif dic.section_analysis_options["Section vs Standard Deviation"]:
+        sectionTable = drop_courses_by_threshold(sectionTable, 'stddev', 1.3, None)
         plotter = gaw.tkMatplot(
             title="Individual Section's GPA Standard Deviation",
             window_width=800,
@@ -820,6 +860,7 @@ def section_analysis(
             x_plot="UniqueCourseID",
             y_plot="stddev",
             df=sectionTable,
+            output_directory=user_directory,
         )
         plotter.plot()
 
@@ -835,6 +876,7 @@ def section_analysis(
             x_plot="Enrollments",
             y_plot="stddev",
             df=sectionTable,
+            output_directory=user_directory,
         )
 
     elif dic.section_analysis_options["Enrollment vs Class Size"]:
@@ -849,6 +891,7 @@ def section_analysis(
             x_plot="Enrollments",
             y_plot="ClassSize",
             df=sectionTable,
+            output_directory=user_directory,
         )
         plotter.plot()
 
@@ -911,6 +954,7 @@ def CourseAnalysis(
             x_plot="CourseTitle",
             y_plot="GPA",
             df=crsTable,
+            output_directory=user_directory,
         )
         plotter.plot()
 
@@ -926,6 +970,7 @@ def CourseAnalysis(
             x_plot="CourseTitle",
             y_plot="Enrollments",
             df=crsTable,
+            output_directory=user_directory,
         )
         plotter.plot()
 
@@ -941,6 +986,7 @@ def CourseAnalysis(
             x_plot="CourseTitle",
             y_plot="Sections",
             df=crsTable,
+            output_directory=user_directory,
         )
         plotter.plot()
 
@@ -956,6 +1002,7 @@ def CourseAnalysis(
             x_plot="Enrollments",
             y_plot="GPA",
             df=crsTable,
+            output_directory=user_directory,
         )
         plotter.plot()
 
@@ -971,6 +1018,7 @@ def CourseAnalysis(
             x_plot="CourseTitle",
             y_plot="stddev",
             df=crsTable,
+            output_directory=user_directory,
         )
         plotter.plot()
 
@@ -1045,6 +1093,7 @@ def student_level_analysis(
             x_plot="StudentLevel",
             y_plot="Enrollments",
             df=df_agg,
+            output_directory=user_directory,
         )
         plotter.plot()
 
@@ -1060,6 +1109,7 @@ def student_level_analysis(
             x_plot="StudentLevel",
             y_plot="GPA",
             df=df_agg,
+            output_directory=user_directory
         )
         plotter.plot()
 
@@ -1075,6 +1125,7 @@ def student_level_analysis(
             x_plot="StudentLevel",
             y_plot="Courses",
             df=df_agg,
+            output_directory=user_directory
         )
         plotter.plot()
 
@@ -1137,6 +1188,7 @@ def course_level_analysis(
             x_plot="CourseLevel",
             y_plot="Courses",
             df=df_agg,
+            output_directory=user_directory,
         )
         plotter.plot()
 
@@ -1152,6 +1204,7 @@ def course_level_analysis(
             x_plot="CourseLevel",
             y_plot="GPA",
             df=df_agg,
+            output_directory=user_directory
         )
         plotter.plot()
 
@@ -1168,6 +1221,7 @@ def course_level_analysis(
             x_plot="CourseLevel",
             y_plot="Enrollments",
             df=df_agg,
+            output_directory=user_directory
         )
         plotter.plot()
 
@@ -1211,7 +1265,6 @@ def student_analysis(
         countvsgpaDF = df_agg.drop_duplicates(subset=['GPAGroups'])
         countvsgpaDF.sort_values(by='GPAGroups', inplace=True)
         countvsgpaDF['GPAGroups'] = countvsgpaDF['GPAGroups'].astype(str)
-        countvsgpaDF.to_csv('countvsgpaDF.csv')
         plotter = gaw.tkMatplot(
             title="Group of Student vs Average GPA",
             window_width=800,
@@ -1223,6 +1276,7 @@ def student_analysis(
             x_plot="GPAGroups",
             y_plot="GPAGroupCounts",
             df=countvsgpaDF,
+            output_directory=user_directory
         )
         plotter.plot()
 
@@ -1238,6 +1292,7 @@ def student_analysis(
             x_plot="GPA",
             y_plot="Courses",
             df=df_agg,
+            output_directory=user_directory
         )
         plotter.plot()
 
@@ -1268,6 +1323,7 @@ def studentCourse_level_analysis(
     max_enrollments=None,
     csv=False,
 ):
+    
     df = drop_courses_by_threshold(df, "ClassSize", min_enrollments, max_enrollments)
 
     df["StudentLevel"] = df["StudentLevel"].apply(
@@ -1279,6 +1335,7 @@ def studentCourse_level_analysis(
     df["CourseLevel"] = df["CourseNum"].apply(sort_courses)
 
     df_agg = pandas_df_agg(df, ["StudentLevel", "CourseLevel"])
+    normalize_dataframe_column(df_agg, "Enrollments", 'robust')
 
     if csv:
         save_path = os.path.join(user_directory, "student_course_level_analysis.csv")
@@ -1295,7 +1352,7 @@ def studentCourse_level_analysis(
         plt.show()
 
     if dic.studentcourse_analysis_options["Student-Course vs Enrollment"]:
-        pivot = df_agg.pivot_table(index='StudentLevel', columns='CourseLevel', values='Enrollments', fill_value=0)
+        pivot = df_agg.pivot_table(index='StudentLevel', columns='CourseLevel', values=f'robustNormalizedEnrollments', fill_value=0)
         plt.figure(figsize=(10, 8))
         sns.heatmap(pivot, annot=True, cmap='coolwarm', fmt=".2f")
         plt.title('Enrollment Heatmap: Student Level vs Enrollment')
@@ -1334,12 +1391,16 @@ def graph_grade_distribution(
         target_values = []
     if value_colors is None:
         value_colors = ['blue', 'green', 'red', 'cyan', 'magenta', 'yellow', 'black']
+    
+    target_values = df[column].unique()
 
     grades = ["A", "A-", "B+", "B", "B-", "C+", "C", "C-"]
     value_colors = value_colors[: len(target_values)]
 
     df = df[df[f"{column}"].isin(target_values)]
+    
     df = normalize_rows_by_grade_frequency(df, column, grades)
+
 
     if csv:
         save_path = os.path.join(user_directory, f"grade_distribution_{column}.csv")
@@ -1369,7 +1430,7 @@ def graph_grade_distribution(
             color=value_colors[i % len(value_colors)],
             edgecolors="black",
             linewidths=1,
-            s=100  # Initial size of the markers
+            s=100 
         )
         ax.plot(
             grades,

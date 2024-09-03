@@ -508,7 +508,7 @@ class GradingAnalysisTool:
             "Section Analysis": self.command_SectionAnalysis,
             "Level Analysis": self.command_LevelAnalysis,
             "Student Analysis": self.command_student_analysis,
-            "Run All Commands": self.command_All_Commands,
+            # "Run All Commands": self.command_All_Commands,
             "Quit": self.quit_program,
         }
 
@@ -1043,7 +1043,7 @@ class GradingAnalysisTool:
         elif help_output == "Major Analysis":
             self.popup(
                 title="Major Analysis Help",
-                popup_text="\Major Analysis allows you to select analysis options (x and y plots) can can choose which Majors you would like individually\nIF YOU WANT TO USE ALL MAJORS, DO NOT CHANGE THE OPTION.\nYou can also use see the grade distrubtion of letter grades normalized across selected Majors\n",
+                popup_text="\nMajor Analysis allows you to select analysis options (x and y plots) can can choose which Majors you would like individually\nIF YOU WANT TO USE ALL MAJORS, DO NOT CHANGE THE OPTION.\nYou can also use see the grade distrubtion of letter grades normalized across selected Majors\n",
             )
         elif help_output == "Level Analysis":
             self.popup(
@@ -1053,18 +1053,18 @@ class GradingAnalysisTool:
         elif help_output == "Course Analysis":
             self.popup(
                 title="Course Analysis Help",
-                popup_text="\Course Analysis allows you to select analysis options (x and y plots) can can choose which Course you would like individually\nIF YOU WANT TO USE ALL COURSES, DO NOT CHANGE THE OPTION.\nYou can also use see the grade distrubtion of letter grades normalized across selected Courses\n",
+                popup_text="\nCourse Analysis allows you to select analysis options (x and y plots) can can choose which Course you would like individually\nIF YOU WANT TO USE ALL COURSES, DO NOT CHANGE THE OPTION.\nYou can also use see the grade distrubtion of letter grades normalized across selected Courses\n",
             )
 
         elif help_output == "Section Analysis":
             self.popup(
                 title="Section Analysis Help",
-                popup_text="\Section Analysis allows you to select analysis options of all the Sections of a course (x and y plots) can can choose which Course Sections you would like individually\nIF YOU WANT TO USE ALL COURSES AND THEIR SECTIONS, DO NOT CHANGE THE OPTION.(SLOWER)\nYou can also use see the grade distrubtion of letter grades normalized across selected Courses Sections\n",
+                popup_text="\nSection Analysis allows you to select analysis options of all the Sections of a course (x and y plots) can can choose which Course Sections you would like individually\nIF YOU WANT TO USE ALL COURSES AND THEIR SECTIONS, DO NOT CHANGE THE OPTION.(SLOWER)\nYou can also use see the grade distrubtion of letter grades normalized across selected Courses Sections\n",
             )
-        elif help_output == "Run All Commands":
+        elif help_output == "Student Analysis":
             self.popup(
-                title="Run All Commands Help",
-                popup_text="\nRuns all the commands above.",
+                title="Student Analysis Help",
+                popup_text="\nStudent Analysis allows you to select analysis options (x and y plots) of various grouping of students\nYou can also use see the grade distrubtion of letter grades normalized across selected Students\n",
             )
         else:
             self.logger.info(f"Displaying general help popup")
@@ -1072,23 +1072,21 @@ class GradingAnalysisTool:
             self.popup(
                 title="Help",
                 popup_text="""
-                (1) 1 Major & Department Analysis: Analyze a Major and Department
 
-                (2) Department Analysis: Analyze and graph Departments, see grade distribution of departments
+                (1) Department Analysis: Analyze and graph Departments, see grade distribution of departments
 
-                (3) Instructor Analysis: Analyze and graph Instructors, see grade distribution of instructors
+                (2) Instructor Analysis: Analyze and graph Instructors, see grade distribution of instructors
 
-                (4) Major Analysis: Analyze and graph Majors, see grade distribution of majors
+                (3) Major Analysis: Analyze and graph Majors, see grade distribution of majors
 
-                (5) Course Analysis: Analyze and graph Courses, see grade distribution of courses
+                (4) Course Analysis: Analyze and graph Courses, see grade distribution of courses
 
-                (6) Section Analysis: Analyze and graph Course Sections, see grade distribution of course sections
+                (5) Section Analysis: Analyze and graph Course Sections, see grade distribution of course sections
 
-                (7) Level Analysis: Analyze and graph Course Levels or Student Levels, see grade distribution of each selected level.
+                (6) Level Analysis: Analyze and graph Course Levels or Student Levels, see grade distribution of each selected level.
                     Heatmap options available for Student-Course Level Analysis.
 
-                (8) Run All Commands: Run all the commands above.
-            """,
+                (7) Student Analysis: Analyze and graph Students, see grade distribution of students""",
             )
         self.logger.debug(f"Help popup for '{help_output}' displayed")
 
@@ -1431,7 +1429,7 @@ class GradingAnalysisTool:
     def command_DeptAnalysis(self):
         self.logger.info("Executing Department Analysis command")
         self.run_command_button_toggle(state="disabled")
-        popup = self.threshold_popup(700, 125)
+        popup = self.threshold_popup(600, 125)
         self.create_analysis_dropdown(popup, dic.department_analysis_options, row=0, column=4)
         self.enrollment_threshold_widget('normal', popup, row=0, column=0)
         self.sections_threshold_widget('normal', popup, row=0, column=2)
@@ -1482,7 +1480,7 @@ class GradingAnalysisTool:
     def command_InstAnalysis(self):
         self.logger.info("Executing Instructor Analysis command")
         self.run_command_button_toggle(state="disabled")
-        popup = self.threshold_popup(700, 125)
+        popup = self.threshold_popup(600, 125)
         self.create_analysis_dropdown(popup, dic.instructor_analysis_options, row=0, column=4)
         self.enrollment_threshold_widget('normal', popup, row=0, column=0)
         self.sections_threshold_widget('normal', popup, row=0, column=2)
@@ -1573,7 +1571,7 @@ class GradingAnalysisTool:
     def command_MjrAnalysis(self):
         self.run_command_button_toggle(state="disabled")
 
-        popup = self.threshold_popup(700, 125)
+        popup = self.threshold_popup(600, 125)
         self.create_analysis_dropdown(popup, dic.major_analysis_options, row=0, column=4)
         self.enrollment_threshold_widget('normal', popup, row=0, column=0)
         self.sections_threshold_widget('normal', popup, row=0, column=2)
@@ -1663,7 +1661,7 @@ class GradingAnalysisTool:
 
     def command_CrsAnalysis(self):
         self.run_command_button_toggle(state="disabled")
-        popup = self.threshold_popup(700, 125)
+        popup = self.threshold_popup(600, 125)
         self.create_analysis_dropdown(popup, dic.course_analysis_options, row=0, column=4)
         self.enrollment_threshold_widget('normal', popup, row=0, column=0)
         self.sections_threshold_widget('normal', popup, row=0, column=2)
@@ -1883,125 +1881,125 @@ class GradingAnalysisTool:
         
         
 
-    def command_All_Commands(self):
-        self.logger.info("Executing 'Run All Commands'")
-        self.commands_listbox.grid_forget()
+    # def command_All_Commands(self):
+    #     self.logger.info("Executing 'Run All Commands'")
+    #     self.commands_listbox.grid_forget()
 
-        self.run_command_button_toggle(state="disabled")
+    #     self.run_command_button_toggle(state="disabled")
 
-        self.departments_listbox_widget(row=3, column=0)
-        self.majors_listbox_widget(row=3, column=1)
-        self.faculty_listbox_widget(row=3, column=2)
-        self.csv_checkbox_widget(where=self.root, state="normal", row=2, column=0)
-        self.grade_distribution_checkbox(
-            where=self.root, state="normal", row=2, column=2
-        )
-        self.thresholds_on_root(which="sections_enrollment")
-        self.confirm_faculty_dept_major_selection()
-        self.logger.debug("'Run All Commands' setup completed")
+    #     self.departments_listbox_widget(row=3, column=0)
+    #     self.majors_listbox_widget(row=3, column=1)
+    #     self.faculty_listbox_widget(row=3, column=2)
+    #     self.csv_checkbox_widget(where=self.root, state="normal", row=2, column=0)
+    #     self.grade_distribution_checkbox(
+    #         where=self.root, state="normal", row=2, column=2
+    #     )
+    #     self.thresholds_on_root(which="sections_enrollment")
+    #     self.confirm_faculty_dept_major_selection()
+    #     self.logger.debug("'Run All Commands' setup completed")
 
-    def run_every_command(self):
-        self.logger.info("Running all commands")
-        self.get_thresholds()
-        gaf.save_unique_entries(gaf.df, user_directory=self.output_directory)
+    # def run_every_command(self):
+    #     self.logger.info("Running all commands")
+    #     self.get_thresholds()
+    #     gaf.save_unique_entries(gaf.df, user_directory=self.output_directory)
 
-        gaf.MajorDepartmentAnalysis(
-            gaf.df,
-            self.dept,
-            self.major,
-            user_directory=self.output_directory,
-            min_enrollments=self.min_enrollment,
-            max_enrollments=self.max_enrollment,
-            min_sections=self.min_sections,
-            max_sections=self.max_sections,
-            csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"),
-            generate_grade_dist=self.grade_dist_checkbox.get_dict_of_checkbox().get(
-                "Generate Grade Distribution?"
-            ),
-        )
+    #     gaf.MajorDepartmentAnalysis(
+    #         gaf.df,
+    #         self.dept,
+    #         self.major,
+    #         user_directory=self.output_directory,
+    #         min_enrollments=self.min_enrollment,
+    #         max_enrollments=self.max_enrollment,
+    #         min_sections=self.min_sections,
+    #         max_sections=self.max_sections,
+    #         csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"),
+    #         generate_grade_dist=self.grade_dist_checkbox.get_dict_of_checkbox().get(
+    #             "Generate Grade Distribution?"
+    #         ),
+    #     )
 
-        gaf.DepartmentAnalysis(
-            gaf.df,
-            user_directory=self.output_directory,
-            min_enrollments=self.min_enrollment,
-            max_enrollments=self.max_enrollment,
-            min_sections=self.min_sections,
-            max_sections=self.max_sections,
-            csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"),
-            generate_grade_dist=self.grade_dist_checkbox.get_dict_of_checkbox().get(
-                "Generate Grade Distribution?"
-            ),
-        )
+    #     gaf.DepartmentAnalysis(
+    #         gaf.df,
+    #         user_directory=self.output_directory,
+    #         min_enrollments=self.min_enrollment,
+    #         max_enrollments=self.max_enrollment,
+    #         min_sections=self.min_sections,
+    #         max_sections=self.max_sections,
+    #         csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"),
+    #         generate_grade_dist=self.grade_dist_checkbox.get_dict_of_checkbox().get(
+    #             "Generate Grade Distribution?"
+    #         ),
+    #     )
 
-        gaf.InstructorAnalysis(
-            gaf.df,
-            user_directory=self.output_directory,
-            min_enrollments=self.min_enrollment,
-            max_enrollments=self.max_enrollment,
-            min_sections=self.min_sections,
-            max_sections=self.max_sections,
-            csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"),
-            generate_grade_dist=self.grade_dist_checkbox.get_dict_of_checkbox().get(
-                "Generate Grade Distribution?"
-            ),
-        )
+    #     gaf.InstructorAnalysis(
+    #         gaf.df,
+    #         user_directory=self.output_directory,
+    #         min_enrollments=self.min_enrollment,
+    #         max_enrollments=self.max_enrollment,
+    #         min_sections=self.min_sections,
+    #         max_sections=self.max_sections,
+    #         csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"),
+    #         generate_grade_dist=self.grade_dist_checkbox.get_dict_of_checkbox().get(
+    #             "Generate Grade Distribution?"
+    #         ),
+    #     )
 
-        gaf.MajorAnalysis(
-            gaf.df,
-            self.output_directory,
-            self.min_enrollment,
-            self.max_enrollment,
-            self.min_sections,
-            self.max_sections,
-            csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"),
-            generate_grade_dist=self.grade_dist_checkbox.get_dict_of_checkbox().get(
-                "Generate Grade Distribution?"
-            ),
-        )
+    #     gaf.MajorAnalysis(
+    #         gaf.df,
+    #         self.output_directory,
+    #         self.min_enrollment,
+    #         self.max_enrollment,
+    #         self.min_sections,
+    #         self.max_sections,
+    #         csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"),
+    #         generate_grade_dist=self.grade_dist_checkbox.get_dict_of_checkbox().get(
+    #             "Generate Grade Distribution?"
+    #         ),
+    #     )
 
-        gaf.section_analysis(
-            gaf.df,
-            self.output_directory,
-            target_courses="Calculus I",
-            csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"),
-            min_enrollments=self.min_enrollment,
-            max_enrollments=self.max_enrollment,
-            min_sections=self.min_sections,
-            max_sections=self.max_sections,
-            generate_grade_dist=self.grade_dist_checkbox.get_dict_of_checkbox().get(
-                "Generate Grade Distribution?"
-            ),
-        )
+    #     gaf.section_analysis(
+    #         gaf.df,
+    #         self.output_directory,
+    #         target_courses="Calculus I",
+    #         csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"),
+    #         min_enrollments=self.min_enrollment,
+    #         max_enrollments=self.max_enrollment,
+    #         min_sections=self.min_sections,
+    #         max_sections=self.max_sections,
+    #         generate_grade_dist=self.grade_dist_checkbox.get_dict_of_checkbox().get(
+    #             "Generate Grade Distribution?"
+    #         ),
+    #     )
 
-        gaf.CourseAnalysis(
-            gaf.df,
-            self.output_directory,
-            self.min_enrollment,
-            self.max_enrollment,
-            self.min_sections,
-            self.max_sections,
-            csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"),
-        )
+    #     gaf.CourseAnalysis(
+    #         gaf.df,
+    #         self.output_directory,
+    #         self.min_enrollment,
+    #         self.max_enrollment,
+    #         self.min_sections,
+    #         self.max_sections,
+    #         csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"),
+    #     )
 
-        gaf.student_level_analysis(
-            gaf.df,
-            user_directory=self.output_directory,
-            min_enrollments=self.min_enrollment,
-            max_enrollments=self.max_enrollment,
-            csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"),
-        )
-        gaf.course_level_analysis(
-            gaf.df,
-            heatmap=self.heatmap_checkbox.get_dict_of_checkbox().get("Heatmap"),
-            user_directory=self.output_directory,
-            min_enrollments=self.min_enrollment,
-            max_enrollments=self.max_enrollment,
-            csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"),
-        )
+    #     gaf.student_level_analysis(
+    #         gaf.df,
+    #         user_directory=self.output_directory,
+    #         min_enrollments=self.min_enrollment,
+    #         max_enrollments=self.max_enrollment,
+    #         csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"),
+    #     )
+    #     gaf.course_level_analysis(
+    #         gaf.df,
+    #         heatmap=self.heatmap_checkbox.get_dict_of_checkbox().get("Heatmap"),
+    #         user_directory=self.output_directory,
+    #         min_enrollments=self.min_enrollment,
+    #         max_enrollments=self.max_enrollment,
+    #         csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"),
+    #     )
 
-        self.hyperlink_filepath()
-        self.reset_gui()
-        self.logger.debug("All commands executed")
+    #     self.hyperlink_filepath()
+    #     self.reset_gui()
+    #     self.logger.debug("All commands executed")
 
 
 if __name__ == "__main__":

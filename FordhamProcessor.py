@@ -183,6 +183,8 @@ def dataCleanup(df):
 
 # Rename columns
     rename_map = {
+        'STU_ulevel': 'StudentLevel',
+        'class_size': 'ClassSize',
         'finGradN': 'FinNumericGrade',
         'finGradC': 'FinLetterGrade',
         'major': 'Major',
