@@ -791,11 +791,6 @@ def section_analysis(
     sectionTable = drop_courses_by_threshold(
         sectionTable, "Enrollments", min_enrollments, max_enrollments
     )
-
-    sectionTable = drop_courses_by_threshold(
-        sectionTable, "semyear", min_sections, max_sections
-    )
-
     sectionTable = sectionTable.drop("Sections", axis=1)
     sectionTable = sectionTable.drop("Courses", axis=1)
 
@@ -875,21 +870,6 @@ def section_analysis(
             color=gaw.get_random_values(gaw.get_non_red_colors())[0],
             x_plot="Enrollments",
             y_plot="stddev",
-            df=sectionTable,
-            output_directory=user_directory,
-        )
-
-    elif dic.section_analysis_options["Enrollment vs Class Size"]:
-        plotter = gaw.tkMatplot(
-            title="Enrollment vs Class Size per Individual Section",
-            window_width=800,
-            window_height=700,
-            x_label="Enrollment",
-            y_label="Class Size",
-            plot_type="scatter",
-            color=gaw.get_random_values(gaw.get_non_red_colors())[0],
-            x_plot="Enrollments",
-            y_plot="ClassSize",
             df=sectionTable,
             output_directory=user_directory,
         )

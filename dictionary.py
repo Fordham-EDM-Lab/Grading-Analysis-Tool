@@ -22,7 +22,6 @@ section_analysis_options = {
     "GPA vs Class Size": False,
     "Section vs Standard Deviation": False,
     "Enrollment vs Standard Deviation": False,
-    "Enrollment vs Class Size": False,
 }
 
 instructor_analysis_options = {
