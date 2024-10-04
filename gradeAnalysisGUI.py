@@ -11,6 +11,7 @@ import sys
 import subprocess
 import json
 import dictionary as dic
+import test_data_creation as randData
 
 def file_path(file):
     return os.path.join(os.path.dirname(os.path.realpath(__file__)), file)
@@ -107,7 +108,7 @@ class GradingAnalysisTool:
             "courseTable.csv",
         ]
 
-        self.pre_processor_check()
+        #self.pre_processor_check()
 
         self.create_json_file()
 
@@ -124,6 +125,11 @@ class GradingAnalysisTool:
         tk.Button(self.root, text="Help", command=self.run_selected_help_command).grid(
             row=7, column=2
         )
+
+        rand_data = tk.Button(
+            self.root, text="Use Random Data?", command=self.create_random_data
+        ).grid(row=1,column=0)
+
 
         self.write_to_GUI()
 
@@ -472,6 +478,8 @@ class GradingAnalysisTool:
         }
 
         if which in attribute_map:
+            if which == self.input_file_name:
+                gaf.df = gaf.pd.read_csv(file)
             setattr(self, attribute_map[which], file)
             self.logger.debug(f"Updated {attribute_map[which]} to {file}")
         else:
@@ -957,9 +965,18 @@ class GradingAnalysisTool:
                 return
 
         self.update_filestate(file=file, which=required_file)
+        if file == self.input_file_name:
+            print('Input File updated, Dataframe changed, to undo this, change the path of the input file')
         button.config(text=str(file))
         self.logger.info(f"File state updated for {required_file}")
 
+
+    def update_df(self):
+        if isinstance(gaf.df, gaf.pd.Dataframe()):
+            gaf.df = gaf.pd.read_csv(self.input_file_name)
+            self.reset_gui()
+        else:
+            return
     ##########################################################################################################
     # populate widgets
 
@@ -1383,36 +1400,36 @@ class GradingAnalysisTool:
         )
         if self.unique_selection == "Departments":
             print("Departments: \n\n")
-            self.numpy_array_metadata(arr=gaf.uniqueDept)
+            self.numpy_array_metadata(arr=gaf.get_unique_dept(gaf.df))
             print("\n\n")
         elif self.unique_selection == "Majors":
             print("Majors: \n\n")
-            self.numpy_array_metadata(arr=gaf.uniqueMjr)
+            self.numpy_array_metadata(arr=gaf.get_unique_major(gaf.df))
             print("\n\n")
         elif self.unique_selection == "Instructor IDs":
             print("Instructor IDs: \n\n")
-            self.numpy_array_metadata(arr=gaf.uniqueInst)
+            self.numpy_array_metadata(arr=gaf.get_unique_inst(gaf.df))
             print("\n\n")
         elif self.unique_selection == "Courses":
             print("Courses: \n\n")
-            self.numpy_array_metadata(arr=gaf.uniqueCrs)
+            self.numpy_array_metadata(arr=gaf.get_unique_crs(gaf.df))
             print("\n\n")
         elif self.unique_selection == "UniqueCourseID":
             print("UniqueCourseID: \n\n")
-            self.numpy_array_metadata(arr=gaf.uniqueCRSID)
+            self.numpy_array_metadata(arr=gaf.get_unique_crsid(gaf.df))
             print("\n\n")
         elif self.unique_selection == "Student IDs":
             print("Student IDs: \n\n")
-            self.numpy_array_metadata(arr=gaf.uniqueStud)
+            self.numpy_array_metadata(arr=gaf.get_unique_stud(gaf.df))
             print("\n\n")
         elif self.unique_selection == "All":
             for name, array in [
-                ("Departments", gaf.uniqueDept),
-                ("Majors", gaf.uniqueMjr),
-                ("Instructor ID", gaf.uniqueInst),
-                ("Courses", gaf.uniqueCrs),
-                ("Course IDs", gaf.uniqueCRSID),
-                ("Student IDs", gaf.uniqueStud),
+                ("Departments", gaf.get_unique_dept(gaf.df)),
+                ("Majors", gaf.get_unique_major(gaf.df)),
+                ("Instructor ID", gaf.get_unique_inst(gaf.df)),
+                ("Courses", gaf.get_unique_crs(gaf.df)),
+                ("Course IDs", gaf.get_unique_crsid(gaf.df)),
+                ("Student IDs", gaf.get_unique_stud(gaf.df)),
             ]:
                 print(f"{name}:")
                 self.numpy_array_metadata(arr=array)
@@ -1440,7 +1457,7 @@ class GradingAnalysisTool:
             self.popup_box_threshold,
             row=1,
             column=4,
-            options_dict={course: False for course in gaf.uniqueDept.flatten()},
+            options_dict={course: False for course in gaf.get_unique_dept(gaf.df).flatten()},
             initial_message="Select Department",
             allow_multiple_entries=True,
             filename="department_selections",
@@ -1457,7 +1474,7 @@ class GradingAnalysisTool:
 
     def run_department_analysis(self):
         if self.generic_instance.isEmpty():
-            departments = gaf.uniqueDept
+            departments = gaf.get_unique_dept(gaf.df)
         else:
             departments = self.generic_instance.get_selected_options()
         self.logger.info("Running department analysis")
@@ -1517,7 +1534,7 @@ class GradingAnalysisTool:
                 self.popup_box_threshold,
                 row=1,
                 column=4,
-                options_dict={str(dept): False for dept in gaf.uniqueDept},
+                options_dict={str(dept): False for dept in gaf.get_unique_dept(gaf.df)},
                 initial_message="Get Department Instructors",
                 allow_multiple_entries=True,
             )
@@ -1528,7 +1545,7 @@ class GradingAnalysisTool:
                 self.popup_box_threshold,
                 row=1,
                 column=4,
-                options_dict={str(crs): False for crs in gaf.uniqueCrs},
+                options_dict={str(crs): False for crs in gaf.get_unique_crs(gaf.df)},
                 initial_message="Get Course Instructors",
                 allow_multiple_entries=True,
             )
@@ -1539,14 +1556,14 @@ class GradingAnalysisTool:
                 self.popup_box_threshold,
                 row=1,
                 column=4,
-                options_dict={str(inst): False for inst in gaf.uniqueInst},
+                options_dict={str(inst): False for inst in gaf.get_unique_inst(gaf.df)},
                 initial_message="Get Course Instructors",
                 allow_multiple_entries=True,
             )
 
     def run_instructor_analysis(self):
         if self.generic_instance.isEmpty():
-            instructors = gaf.uniqueInst
+            instructors = gaf.get_unique_inst(gaf.df)
         else:
             instructors = self.generic_instance.get_selected_options()
 
@@ -1580,7 +1597,7 @@ class GradingAnalysisTool:
             self.popup_box_threshold,
             row=1,
             column=4,
-            options_dict={str(major): False for major in gaf.uniqueMjr.flatten()},
+            options_dict={str(major): False for major in gaf.get_unique_major(gaf.df).flatten()},
             initial_message="Select Major",
             allow_multiple_entries=True,
         )
@@ -1595,7 +1612,7 @@ class GradingAnalysisTool:
 
     def run_major_analysis(self):
         if self.generic_instance.isEmpty():
-            majors = gaf.uniqueMjr
+            majors = gaf.get_unique_major(gaf.df)
         else:
             majors = self.generic_instance.get_selected_options()
         gaf.MajorAnalysis(
@@ -1628,7 +1645,7 @@ class GradingAnalysisTool:
             self.popup_box_threshold,
             row=1,
             column=4,
-            options_dict={str(section): False for section in gaf.uniqueCrs.flatten()},
+            options_dict={str(section): False for section in gaf.get_unique_crs(gaf.df).flatten()},
             initial_message="Select Course",
             allow_multiple_entries=True,
         )
@@ -1639,7 +1656,7 @@ class GradingAnalysisTool:
 
     def run_section_analysis(self):
         if self.generic_instance.isEmpty():
-            courses = gaf.uniqueCrs
+            courses = gaf.get_unique_crs(gaf.df)
         else:
             courses = self.generic_instance.get_selected_options()
 
@@ -1688,7 +1705,7 @@ class GradingAnalysisTool:
 
     def run_crs_analysis(self):
         if self.generic_instance.isEmpty():
-            courses = gaf.uniqueCrs
+            courses = gaf.get_unique_crs(gaf.df)
         else:
             courses = self.generic_instance.get_selected_options()
 
@@ -1716,7 +1733,7 @@ class GradingAnalysisTool:
                 self.popup_box_threshold,
                 row=1,
                 column=4,
-                options_dict={str(dept): False for dept in gaf.uniqueDept},
+                options_dict={str(dept): False for dept in gaf.get_unique_dept(gaf.df)},
                 initial_message="Get Department Courses",
                 allow_multiple_entries=True,
             )
@@ -1727,7 +1744,7 @@ class GradingAnalysisTool:
                 self.popup_box_threshold,
                 row=1,
                 column=4,
-                options_dict={str(crs): False for crs in gaf.uniqueCrs},
+                options_dict={str(crs): False for crs in gaf.get_unique_crs(gaf.df)},
                 initial_message="Get Courses Manually",
                 allow_multiple_entries=True,
             )
@@ -2000,6 +2017,14 @@ class GradingAnalysisTool:
     #     self.hyperlink_filepath()
     #     self.reset_gui()
     #     self.logger.debug("All commands executed")
+
+    def create_random_data(self, num_rows = 40000):
+        rand_df = randData.create_random_dataframe(num_rows = num_rows)
+        rand_df.to_csv('random_csv')
+        self.update_filestate(file=gaf.file_path('random_df.csv'), which=self.input_file_name)
+        print('Input File updated, Dataframe changed, to undo this, change the path of the input file')
+        gaf.df = gaf.pd.read_csv(gaf.file_path(self.input_file_name))
+
 
 
 if __name__ == "__main__":

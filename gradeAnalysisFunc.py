@@ -34,12 +34,23 @@ plt.rcParams.update({"font.size": 14})
 df = pd.read_csv(file_path("data-processed-ready.csv"))
 
 # get useful list of all unique departments, majors, instructors, courses, UniqueCourseID, and students
-uniqueDept = df["Department"].unique()
-uniqueMjr = df["Major"].unique()
-uniqueInst = df["FacultyID"].unique()
-uniqueCrs = df["CourseTitle"].unique()
-uniqueCRSID = df["UniqueCourseID"].unique()
-uniqueStud = df["SID"].unique()
+def get_unique_dept(df):
+    return df["Department"].unique()
+
+def get_unique_major(df):
+    return df["Major"].unique()
+
+def get_unique_inst(df):
+    return df["FacultyID"].unique()
+
+def get_unique_crs(df):
+    return df["CourseTitle"].unique()
+
+def get_unique_crsid(df):
+    return df["UniqueCourseID"].unique()
+
+def get_unique_stud(df):
+    return df["SID"].unique()
 
 
 # returns filtered dataframe. Each condition should be passed as column name = LIST of targets
@@ -55,12 +66,7 @@ def filter(df, **kwargs):
 
 
 def save_unique_entries(df, user_directory):
-    uniquevalue = df["Department"].unique()
-    uniqueMjr = df["Major"].unique()
-    uniqueInst = df["FacultyID"].unique()
-    uniqueCrs = df["CourseTitle"].unique()
-    uniqueCRSID = df["UniqueCourseID"].unique()
-    uniqueStud = df["SID"].unique()
+    uniquevalue = get_unique_dept(df)
 
     save_path = os.path.join(user_directory, "unique_entries.csv")
 
@@ -91,21 +97,21 @@ def save_unique_entries(df, user_directory):
 
         max_length = max(
             len(uniquevalue),
-            len(uniqueMjr),
-            len(uniqueInst),
-            len(uniqueCrs),
-            len(uniqueCRSID),
-            len(uniqueStud),
+            len(get_unique_major(df)),
+            len(get_unique_inst(df)),
+            len(get_unique_crs(df)),
+            len(get_unique_crsid(df)),
+            len(get_unique_stud(df)),
         )
 
         for i in range(max_length):
             row = [
                 uniquevalue[i] if i < len(uniquevalue) else "",
-                uniqueMjr[i] if i < len(uniqueMjr) else "",
-                uniqueInst[i] if i < len(uniqueInst) else "",
-                uniqueCrs[i] if i < len(uniqueCrs) else "",
-                uniqueCRSID[i] if i < len(uniqueCRSID) else "",
-                uniqueStud[i] if i < len(uniqueStud) else "",
+                get_unique_major(df)[i] if i < len(get_unique_major(df)) else "",
+                get_unique_inst(df)[i] if i < len(get_unique_inst(df)) else "",
+                get_unique_crs(df)[i] if i < len(get_unique_crs(df)) else "",
+                get_unique_crsid(df)[i] if i < len(get_unique_crsid(df)) else "",
+                get_unique_stud(df)[i] if i < len(get_unique_stud(df)) else "",
             ]
             writer.writerow(row)
 
@@ -132,22 +138,22 @@ def unique(df):
     )
     if req == "Departments":
         print("\nThese are all Departments:")
-        print(uniqueDept)
+        print(get_unique_dept(df))
     elif req == "Majors":
         print("\nThese are all Majors:")
-        print(uniqueMjr)
+        print(get_unique_major(df))
     elif req == "Instructor IDs":
         print("\nThese are all Instructor IDs:")
-        print(uniqueInst)
+        print(get_unique_inst(df))
     elif req == "Courses":
         print("\nThese are all Courses:")
-        print(uniqueCrs)
+        print(get_unique_crs(df))
     elif req == "UniqueCourseID":
         print("\nThese are all UniqueCourseID:")
-        print(uniqueCRSID)
+        print(get_unique_crsid(df))
     elif req == "Student IDs":
         print("\nThese are all Student IDs:")
-        print(uniqueStud)
+        print(get_unique_stud(df))
     else:
         print("This is not a valid option.")
 
@@ -267,7 +273,7 @@ def coloring(dt):
 
 
 def check_list_is_subset(target_list, check_list):
-    return set(target_list).issubset(check_list)
+    return all(item in check_list for item in target_list)
 
 
 def MajorDepartmentAnalysis(
@@ -329,7 +335,7 @@ def DepartmentAnalysis(
     csv=False,
     generate_grade_dist=False,
 ):
-    
+
     deptTable = pandas_df_agg(df, "Department")
 
     deptTable = drop_courses_by_threshold(
@@ -375,7 +381,7 @@ def DepartmentAnalysis(
             output_directory=user_directory,
         )
         plotter.plot()
-    
+
     if dic.department_analysis_options["Department vs Section #"]:
         plotter = gaw.tkMatplot(
             title="# Sections offered by Department",
@@ -452,16 +458,16 @@ def InstructorAnalysis(
     csv=False,
     generate_grade_dist=False,
 ):
-    if check_list_is_subset(target_values, uniqueDept):
-        df = df[df["Department"].isin(list(target_values))]
-
-    if check_list_is_subset(target_values, uniqueCrs):
-        df = df[df["CourseTitle"].isin(list(target_values))]
-
-    if check_list_is_subset(target_values, uniqueInst):
-        df = df[df["FacultyID"].isin(list(target_values))]
+    if check_list_is_subset(target_values, get_unique_dept(df)):
+        df = df.query("CourseTitle in @target_values")
+    elif check_list_is_subset(target_values, get_unique_crs(df)):
+        df = df.query("CourseTitle in @target_values")
+        print(df.FacultyID.unique())
+    elif check_list_is_subset(target_values, get_unique_inst(df)):
+        df = df.query("CourseTitle in @target_values")
 
     instTable = pandas_df_agg(df, "FacultyID")
+
     instTable = drop_courses_by_threshold(
         instTable, "Enrollments", min_enrollments, max_enrollments
     )
@@ -571,12 +577,12 @@ def InstructorAnalysis(
             title="Instructor's Average GPA vs Total Enrollment",
             window_width=800,
             window_height=700,
-            x_label="Enrollment #",
-            y_label="Instructor GPA",
+            x_label="Instructor GPA",
+            y_label="Enrollment #",
             plot_type="scatter",
             color=gaw.get_random_values(gaw.get_non_red_colors())[0],
-            x_plot="Enrollments",
-            y_plot="GPA",
+            x_plot="GPA",
+            y_plot="Enrollments",
             df=instTable,
         )
         plotter.plot()
@@ -723,12 +729,12 @@ def MajorAnalysis(
 
 
 def pandas_df_agg(df, index=["Major"]):
-    """Sections: Unique instances of a CourseID for a given index 
+    """Sections: Unique instances of a CourseID for a given index
        Courses: Unique instances of a CourseTitle for a given index
-       GPA: Average GPA for a given index 
-       stddev: Standard deviation of GPA for a given index 
-       kurtosis: Kurtosis of GPA for a given index 
-       skewness: Skewness of GPA for a given index 
+       GPA: Average GPA for a given index
+       stddev: Standard deviation of GPA for a given index
+       kurtosis: Kurtosis of GPA for a given index
+       skewness: Skewness of GPA for a given index
        """
     if isinstance(index, str):
         index = [index]
@@ -737,17 +743,22 @@ def pandas_df_agg(df, index=["Major"]):
         df.groupby(index)["SID"].nunique().reset_index(name="Enrollments")
     )
 
+
     df_agg = (
         df.groupby(index)
         .agg(
             Sections=("UniqueCourseID", "nunique"),
             Courses=("CourseTitle", "nunique"),
             GPA=("FinNumericGrade", "mean"),
-            # GPAW=('FinNumericGrade', lambda x: np.average(x, weights=df.loc[x.index, 'CredHrs'])),
+            GPAW=('FinNumericGrade', lambda x: np.average(x, weights=df.loc[x.index, 'CredHrs']) if df.loc[x.index, 'CredHrs'].sum() != 0 else np.nan),
             stddev=("FinNumericGrade", "std"),
             kurtosis=("FinNumericGrade", lambda x: x.kurt()),
             skewness=("FinNumericGrade", lambda x: x.skew()),
+            CoV=("FinNumericGrade", lambda x: ((x.std() / x.mean()) * 100) if x.mean() != 0 else np.nan), #coefficent of variation
+            ModeGPA=("FinNumericGrade", lambda x: x.mode()[0] if not x.mode().empty else np.nan),
+
         )
+        .rename(columns={'CoV': 'CoV(%)'})
         .reset_index()
     )
 
@@ -755,6 +766,19 @@ def pandas_df_agg(df, index=["Major"]):
 
     df_final = pd.merge(df_enrollments, df_agg, on=index)
     df_final = pd.merge(df_final, df_grade, on=index)
+
+    delta_gpa_ret_df = pd.DataFrame()
+    delta_gpa_ret_df[index] = df_final[index]
+
+    if not any(item in ['UniqueCourseID', 'SID'] for item in index):
+        delta_gpa = df.groupby(index + ['Semester']).agg(GPA=("FinNumericGrade", "mean"), GPAW=('FinNumericGrade', lambda x: np.average(x, weights=df.loc[x.index, 'CredHrs']) if df.loc[x.index, 'CredHrs'].sum() != 0 else np.nan))
+        temp_copy = delta_gpa.copy()
+        delta_gpa['DELTA(GPA)'] = temp_copy.groupby(index)['GPA'].diff().fillna(0)
+        delta_gpa['DELTA(GPAW)'] = temp_copy.groupby(index)['GPAW'].diff().fillna(0)
+        delta_gpa_ret_df['avg_gpa_change'] = delta_gpa.groupby(index)['DELTA(GPA)'].mean().values
+        delta_gpa_ret_df['avg_gpaw_change'] = delta_gpa.groupby(index)['DELTA(GPAW)'].mean().values
+        df_final = pd.merge(df_final, delta_gpa_ret_df, on=index)
+
 
     float_cols = df_final.select_dtypes(include="float").columns
 
@@ -783,6 +807,8 @@ def section_analysis(
         on="UniqueCourseID",
         how="left",
     )
+    sectionTable = pd.merge(sectionTable, df[['FacultyID',  'UniqueCourseID']], on="UniqueCourseID", how="left")
+
 
     sectionTable['UniqueCourseID'] = sectionTable['UniqueCourseID'].astype(str)
     sectionTable = sectionTable.drop_duplicates(subset=["UniqueCourseID"])
@@ -906,10 +932,10 @@ def CourseAnalysis(
     generate_grade_dist=False,
 ):
 
-    if check_list_is_subset(target_values, uniqueDept):
+    if check_list_is_subset(target_values, get_unique_dept(df)):
         df = df[df["Department"].isin(list(target_values))]
 
-    if check_list_is_subset(target_values, uniqueCrs):
+    if check_list_is_subset(target_values, get_unique_crs(df)):
         df = df[df["CourseTitle"].isin(list(target_values))]
 
     crsTable = pandas_df_agg(df, "CourseTitle")
@@ -1018,7 +1044,7 @@ def CourseAnalysis(
         plotter.plot()
 
     if csv:
-        save_path = os.path.join(user_directory, "crsTableTrunc.csv")
+        save_path = os.path.join(user_directory, "crsTable.csv")
         crsTable.to_csv(save_path, encoding="utf-8-sig")
         print("\n\nFile Created:", f" {save_path}\n\n")
 
@@ -1222,7 +1248,7 @@ def course_level_analysis(
 
     dic.reset_all_false()
 
-def student_analysis(    
+def student_analysis(
     df,
     user_directory,
     min_enrollments=None,
@@ -1232,6 +1258,7 @@ def student_analysis(
 
     df_agg = pandas_df_agg(df, "SID")
     df_agg = drop_courses_by_threshold(df_agg, "Courses", min_enrollments, max_enrollments)
+    df_agg.drop(['Enrollments'], axis=1, inplace=True)
 
     labels = []
     for i in range(0, 40):
@@ -1239,14 +1266,14 @@ def student_analysis(
         end = round((i + 1) * 0.1, 1)
         labels.append(f"{start}-{end}")
 
-    if dic.student_analysis_options["Group of Student vs Average GPA"]:
+    if dic.student_analysis_options["GPA groups vs Student Count"]:
         df_agg['GPAGroups'] = pd.cut(df_agg['GPA'], bins=40, labels=labels)
         df_agg['GPAGroupCounts'] = df_agg['GPAGroups'].map(df_agg['GPAGroups'].value_counts())
         countvsgpaDF = df_agg.drop_duplicates(subset=['GPAGroups'])
         countvsgpaDF.sort_values(by='GPAGroups', inplace=True)
         countvsgpaDF['GPAGroups'] = countvsgpaDF['GPAGroups'].astype(str)
         plotter = gaw.tkMatplot(
-            title="Group of Student vs Average GPA",
+            title="GPA groups vs Student Count",
             window_width=800,
             window_height=700,
             x_label="GPA Group",
@@ -1278,7 +1305,7 @@ def student_analysis(
 
 
     if csv:
-        save_path = os.path.join(user_directory, "course_level_analysis.csv")
+        save_path = os.path.join(user_directory, "SID_student_analysis.csv")
         df_agg.to_csv(save_path, encoding="utf-8-sig")
         print("\n\nFile Created:", f" {save_path}\n\n")
 
@@ -1303,7 +1330,7 @@ def studentCourse_level_analysis(
     max_enrollments=None,
     csv=False,
 ):
-    
+
     df = drop_courses_by_threshold(df, "ClassSize", min_enrollments, max_enrollments)
 
     df["StudentLevel"] = df["StudentLevel"].apply(
@@ -1371,14 +1398,14 @@ def graph_grade_distribution(
         target_values = []
     if value_colors is None:
         value_colors = ['blue', 'green', 'red', 'cyan', 'magenta', 'yellow', 'black']
-    
+
     target_values = df[column].unique()
 
     grades = ["A", "A-", "B+", "B", "B-", "C+", "C", "C-"]
     value_colors = value_colors[: len(target_values)]
 
     df = df[df[f"{column}"].isin(target_values)]
-    
+
     df = normalize_rows_by_grade_frequency(df, column, grades)
 
 
@@ -1410,7 +1437,7 @@ def graph_grade_distribution(
             color=value_colors[i % len(value_colors)],
             edgecolors="black",
             linewidths=1,
-            s=100 
+            s=100
         )
         ax.plot(
             grades,

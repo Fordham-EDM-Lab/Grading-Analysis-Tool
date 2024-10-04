@@ -542,6 +542,7 @@ class tkMatplot:
         self.help_button = None
         self.logger.info("tkMatplot class initialized")
 
+
     def plot(self):
         self.logger.info("Creating plot")
 
