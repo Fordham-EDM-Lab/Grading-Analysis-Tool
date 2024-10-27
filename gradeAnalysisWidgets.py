@@ -28,6 +28,9 @@ from matplotlib.backend_bases import MouseButton
 import pandas as pd
 import tkinter.scrolledtext as tkst
 from functools import partial
+from tkinter import colorchooser
+import dictionary
+import csv
 
 
 def popup(self, title="", popup_text=""):
@@ -64,7 +67,7 @@ def get_non_red_colors():
         return (0.299 * r + 0.587 * g + 0.114 * b)
 
     non_red_colors = [
-        (name, hex) for name, hex in css4_colors.items() 
+        (name, hex) for name, hex in css4_colors.items()
         if "red" not in name.lower() and calculate_brightness(hex_to_rgb(hex)) <= 200
     ]
 
@@ -106,7 +109,7 @@ def normalize_dataframe_column(dataframe, column, normalization_type):
     if column not in dataframe.columns:
         print(f"Column '{column}' not found in the dataframe.")
         return
-    
+
     print(f"Normalizing column '{column}' using '{normalization_type}' method.")
 
     normalization_functions = {
@@ -466,9 +469,11 @@ class tkMatplot:
         x_label=None,
         y_label=None,
         plot_type=None,
+        colors=None,
         color=None,
         x_plot=None,
         y_plot=None,
+        color_column = None,
         data_type=None,
         output_directory=None,
     ):
@@ -494,6 +499,7 @@ class tkMatplot:
         self.x_label = x_label
         self.y_label = y_label
         self.plot_type = plot_type
+        self.colors = colors
         self.color = color
         self.x_plot = x_plot
         self.y_plot = y_plot
@@ -502,6 +508,7 @@ class tkMatplot:
         self.title = title
         self.tree = None
         self.highlighted_point = None
+        self.color_column = color_column
         self.ax = None
         self.default_directory = os.path.join(output_directory, 'Binexport.txt') if output_directory else (os.getcwd(), 'Binexport.txt')
         self.left_frame = None
@@ -530,6 +537,7 @@ class tkMatplot:
             x_label,
             y_label,
             plot_type,
+            colors,
             color,
             x_plot,
             y_plot,
@@ -541,9 +549,18 @@ class tkMatplot:
         )
         self.help_button = None
         self.logger.info("tkMatplot class initialized")
+        if self.colors is None:
+            self.is_list = True
+        else:
+            self.is_list = False
+
 
 
     def plot(self):
+        if self.is_list:
+            self.colors = {key: self.color for key in self.df[self.x_plot]}
+
+
         self.logger.info("Creating plot")
 
         self.fig.clear()
@@ -584,7 +601,7 @@ class tkMatplot:
                 self.logger.info(f"Normalizing data using '{self.normalize_option}' method")
                 normalize_dataframe_column(df, current_yplot, self.normalize_option)
                 current_yplot = f"{self.normalize_option}Normalized{current_yplot}"
-                self.logger.info(f"Normalized column: {current_yplot}")  
+                self.logger.info(f"Normalized column: {current_yplot}")
             for _, bin_data in df.iterrows():
                 color = bin_data['Color']
                 bin_name = bin_data['Bin']
@@ -627,7 +644,7 @@ class tkMatplot:
                     self.ax.scatter(x_data, y_data, label=bin_name)
                 elif self.plot_type == "bar":
                     self.ax.bar(x_data, y_data, label=bin_name)
-                    
+
         else:
             self.logger.info("Creating plot without bin aggregation")
             self.logger.info(f"Sort order: {self.sort_order}")
@@ -645,16 +662,35 @@ class tkMatplot:
                 self.logger.info(f"Normalizing data using '{self.normalize_option}' method")
                 normalize_dataframe_column(df, current_yplot, self.normalize_option)
                 current_yplot = f"{self.normalize_option}Normalized{current_yplot}"
-                self.logger.info(f"Normalized column: {current_yplot}")  
+                self.logger.info(f"Normalized column: {current_yplot}")
+
             if self.plot_type == "line":
-                self.ax.plot(
-                    df[self.x_plot], df[current_yplot], color=self.color, marker="o"
-                )
+                for category in df[self.color_column].unique():
+                    category_mask = df[self.color_column] == category
+                    self.ax.plot(
+                        df[self.x_plot][category_mask],
+                        df[current_yplot][category_mask],
+                        color=self.colors[category],
+                        marker="o",
+                    )
             elif self.plot_type == "scatter":
-                self.ax.scatter(df[self.x_plot], df[current_yplot], color=self.color)
+                for category in df[self.color_column].unique():
+                    category_mask = df[self.color_column] == category
+                    self.ax.scatter(
+                        df[self.x_plot][category_mask],
+                        df[current_yplot][category_mask],
+                        color=self.colors[category],
+                    )
             elif self.plot_type == "bar":
-                    self.ax.bar(df[self.x_plot], df[current_yplot], color=self.color, align='center')
-                    self.ax.set_ylim(0, df[current_yplot].max() + 1) 
+                for category in df[self.color_column].unique():
+                    category_mask = df[self.color_column] == category
+                    self.ax.bar(
+                        df[self.x_plot][category_mask],
+                        df[current_yplot][category_mask],
+                        color=self.colors[category],
+                        align='center',
+                    )
+                self.ax.set_ylim(0, df[current_yplot].max() + 1)
 
 
         self.ax.set_xlabel(self.x_label, fontsize=12)
@@ -697,7 +733,7 @@ class tkMatplot:
 
         else:
             self.accept_change_button.config(state="disabled")
-        
+
         self.fig.tight_layout(rect=[1,1,1,1])
 
 
@@ -753,6 +789,10 @@ class tkMatplot:
             "F",
             "kurtosis",
             "skewness",
+            "avg_gpa_change",
+            "avg_gpaw_change",
+            "CoV(%)",
+            "GPAW"
         ]
         row_data = df.loc[nearest_x_idx]
         row_data = row_data.drop(labels=unwanted_col, errors="ignore")
@@ -799,6 +839,7 @@ class tkMatplot:
             x_label,
             y_label,
             plot_type,
+            colors,
             color,
             x_plot,
             y_plot,
@@ -817,6 +858,7 @@ class tkMatplot:
         self.y_label = y_label
         self.plot_type = plot_type
         self.color = color
+        self.colors = colors
         self.x_plot = x_plot
         self.y_plot = y_plot
         self.title = title
@@ -973,7 +1015,7 @@ class tkMatplot:
         self.toolbar.pack(side=tk.TOP, fill=tk.X)
         self.toolbar.update()
         self.logger.info("Toolbar created")
-        
+
 
     def add_table(self, df,xplot, yplot):
         self.logger.info("Creating table")
@@ -1042,7 +1084,7 @@ class tkMatplot:
         self.original_index = df_agg.index.copy()
 
         return df_agg
-    
+
 
     def bin_agg_tuples(self, df, bin_tuples, x_plot):
         self.logger.info("Aggregating data based on numerical bin tuples")
@@ -1140,7 +1182,7 @@ class NumericalBinApp:
     def set_callback(self, callback):
         self.logger.info(f"Setting callback function to {callback}")
         self.callback = callback
-    
+
     def generate_bins(self):
         try:
             self.logger.info("Generating numerical bins")
@@ -1154,7 +1196,7 @@ class NumericalBinApp:
         except ValueError:
             if self.callback:  # If a callback is set, let it handle errors
                 self.logger.error("Error generating numerical bins")
-                self.callback([])  # Pass an empty list to indicate error      
+                self.callback([])  # Pass an empty list to indicate error
 
     def numerical_bin(self, start, end, step):
         self.logger.info("Creating numerical bins")
@@ -1271,7 +1313,7 @@ class BinPopup():
     def check_selection(self):
         if self.dropdown.get_selected_options():
             self.set_state_normal()
-        self.popup.after(100, self.check_selection) 
+        self.popup.after(100, self.check_selection)
 
     def set_state_normal(self):
         self.add_group_button.config(state='normal')
@@ -1386,14 +1428,17 @@ class tkDropdown():
         self.master = master
         self.allow_multiple_entries = allow_multiple_entries
         self.options_dict = options_dict
-        self.selected_options = []
+        self.selected_options = {}
         self.row = row
         self.column = column
         self.initial_message = initial_message
         self.command = None
-        self.path = path if path else os.path.join(os.getcwd(), filename + ".txt")
+        self.path = path if path else os.path.join(os.getcwd(), filename + ".csv")
         self.scrolltextbox_width = scrolltextbox_width
         self.scrolltextbox_height = scrolltextbox_height
+        self.current_key = None
+        self.selected_color = get_random_values(get_non_red_colors())[0]
+
 
 
         if command:
@@ -1407,6 +1452,13 @@ class tkDropdown():
         self.logger.info("Creating dropdown grid")
         self.dropdown.grid(**kwargs)
 
+    def choose_color(self):
+        selected_color = colorchooser.askcolor(title="Choose color")[1]
+
+        if selected_color:
+            self.color_chooser.config(bg=selected_color)
+            self.selected_color = selected_color
+
 
     def create_combobox(self):
         self.logger.info("Creating combobox")
@@ -1417,13 +1469,17 @@ class tkDropdown():
         self.dropdown["state"] = "normal"
         self.dropdown.set(self.initial_message)
 
+        if self.allow_multiple_entries:
+            self.color_chooser = tk.Button(self.master, text="", command=self.choose_color, width=1, height=1, bg=self.selected_color)
+            self.color_chooser.grid(row=self.row, column=self.column, sticky=tk.E)
+
+
         if self.command:
             self.dropdown.bind("<<ComboboxSelected>>", self.update_command)
         else:
             self.dropdown.bind("<<ComboboxSelected>>", self.update_dict)
-        
+
         self.dropdown.bind("<Return>", self.update_dict)
-        self.dropdown.bind("<FocusOut>", self.update_dict)
         self.dropdown.bind("<Tab>", self.update_dict)
 
     def create_selected_options_display(self):
@@ -1437,12 +1493,18 @@ class tkDropdown():
         tk.Button(
             self.master,
             text="Export Choices",
-            command=self.export_to_txt,
+            command=self.export_to_csv,
         ).grid(row=self.row + 2, column=self.column)
+
+        tk.Button(
+            self.master,
+            text="Import Choices",
+            command=self.import_from_csv,
+        ).grid(row=self.row + 2, column=self.column + 1)
 
     def update_command(self, *args):
         selected_key = self.dropdown.get()
-        
+
         if (
             selected_key in self.options_dict
             and selected_key not in self.selected_options
@@ -1454,11 +1516,14 @@ class tkDropdown():
 
     def update_dict(self, event):
         selected_key = self.dropdown.get()
+        if self.current_key is not None and dictionary.is_option_analysis(selected_key):
+            dictionary.change_analysis_value(self.current_key, False)
+        self.current_key = selected_key
         if (
             selected_key in self.options_dict
             and selected_key not in self.selected_options
         ):
-            self.selected_options.append(selected_key)
+            self.selected_options[selected_key] = self.selected_color
             self.options_dict[selected_key] = True
             if self.allow_multiple_entries:
                 self.selected_options_label.add_text(f"{selected_key},\n")
@@ -1485,16 +1550,30 @@ class tkDropdown():
             self.selected_options_label.destroy()
         self.selected_options.clear()
 
-    def export_to_txt(self):  
-        self.logger.info("Exporting selected options to text file") 
+    def export_to_csv(self):
+        self.logger.info("Exporting selected options to text file")
         if self.allow_multiple_entries:
-            self.selected_options_label.export_to_txt(self.path)
+            with open(self.path, "w", newline="") as f:
+                writer = csv.writer(f)
+                for key, value in self.selected_options.items():
+                    writer.writerow([key, value])
             print("\n\nFile Created:", f" {self.path}\n\n")
-
         else:
             with open(self.path, "w") as file:
                 file.write(self.dropdown.get())
                 print("\n\nFile Created:", f" {self.path}\n\n")
+
+    def import_from_csv(self):
+        if self.allow_multiple_entries:
+            self.logger.info("Importing selected options from csv file")
+            self.path = tk.filedialog.askopenfilename()
+            with open(self.path, "r") as file:
+                reader = csv.reader(file)
+                for row in reader:
+                    self.selected_options[row[0]] = row[1]
+                    self.selected_options_label.add_text(f"{row[0]},\n")
+        else:
+            return
 
 class tkScrolledtextBox(tkst.ScrolledText):
     def __init__(self, master, row, column, width, height):
@@ -1512,9 +1591,9 @@ class tkScrolledtextBox(tkst.ScrolledText):
 
     def get_text(self):
         return self.get("1.0", tk.END)
-    
+
     def export_to_txt(self, filename):
         with open(filename, "w") as file:
             file.write(self.get_text())
 
-    
+
