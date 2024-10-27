@@ -13,6 +13,9 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import os
 import tkinter as tk
+
+from requests.packages import target
+
 import gradeAnalysisWidgets as gaw
 import dictionary as dic
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
@@ -31,8 +34,6 @@ def file_path(file):
 plt.rcParams.update({"font.size": 14})
 
 # save the data file as df
-df = pd.read_csv(file_path("data-processed-ready.csv"))
-
 # get useful list of all unique departments, majors, instructors, courses, UniqueCourseID, and students
 def get_unique_dept(df):
     return df["Department"].unique()
@@ -45,6 +46,9 @@ def get_unique_inst(df):
 
 def get_unique_crs(df):
     return df["CourseTitle"].unique()
+
+def get_unique_crscode(df):
+    return df["CourseCode"].unique()
 
 def get_unique_crsid(df):
     return df["UniqueCourseID"].unique()
@@ -346,9 +350,10 @@ def DepartmentAnalysis(
     )
 
 
-    target_values = list(target_values)
-
-    deptTable = deptTable[deptTable["Department"].isin(target_values)]
+    if isinstance(target_values, dict):
+        deptTable = deptTable[deptTable["Department"].isin(target_values.keys())]
+    else:
+        deptTable = deptTable[deptTable["Department"].isin(target_values)]
 
     if dic.department_analysis_options["Department vs GPA"]:
         plotter = gaw.tkMatplot(
@@ -358,7 +363,9 @@ def DepartmentAnalysis(
             x_label="Department",
             y_label="GPA",
             plot_type="bar",
-            color="teal",
+            colors=target_values if isinstance(target_values, dict) else None,
+            color_column='Department',
+            color='black',
             x_plot="Department",
             y_plot="GPA",
             df=deptTable,
@@ -374,6 +381,8 @@ def DepartmentAnalysis(
             x_label="Department",
             y_label="Enrollment",
             plot_type="scatter",
+            colors=target_values if isinstance(target_values, dict) else None,
+            color_column='Department',
             color="teal",
             x_plot="Department",
             y_plot="Enrollments",
@@ -390,7 +399,9 @@ def DepartmentAnalysis(
             x_label="Department",
             y_label="Sections",
             plot_type="scatter",
+            colors=target_values if isinstance(target_values, dict) else None,
             color="teal",
+            color_column='Department',
             x_plot="Department",
             y_plot="Sections",
             df=deptTable,
@@ -406,7 +417,9 @@ def DepartmentAnalysis(
             x_label="Department",
             y_label="Courses",
             plot_type="bar",
+            colors=target_values if isinstance(target_values, dict) else None,
             color="teal",
+            color_column='Department',
             x_plot="Department",
             y_plot="Courses",
             df=deptTable,
@@ -422,9 +435,28 @@ def DepartmentAnalysis(
             x_label="Standard Deviation",
             y_label="Enrollment",
             plot_type="scatter",
+            colors=target_values if isinstance(target_values, dict) else None,
+            color_column='Department' if isinstance(target_values, dict) else 'stddev',
             color="teal",
             x_plot="stddev",
             y_plot="Enrollments",
+            df=deptTable,
+        )
+        plotter.plot()
+
+    if dic.department_analysis_options["Enrollment vs GPA"]:
+        plotter = gaw.tkMatplot(
+            title="Department Enrollment vs GPA",
+            window_width=800,
+            window_height=700,
+            x_label="Enrollment",
+            y_label="GPA",
+            plot_type="scatter",
+            colors=target_values if isinstance(target_values, dict) else None,
+            color="teal",
+            x_plot="Enrollments",
+            color_column='Department' if isinstance(target_values, dict) else 'Enrollments',
+            y_plot="GPA",
             df=deptTable,
         )
         plotter.plot()
@@ -447,6 +479,10 @@ def DepartmentAnalysis(
     dic.reset_all_false()
 
 
+def return_filtered_dataframe(df: pd.DataFrame, column: str, values: list) -> pd.DataFrame:
+    mask = df[column].isin(values)
+    return df[mask]
+
 def InstructorAnalysis(
     df,
     user_directory,
@@ -458,13 +494,6 @@ def InstructorAnalysis(
     csv=False,
     generate_grade_dist=False,
 ):
-    if check_list_is_subset(target_values, get_unique_dept(df)):
-        df = df.query("CourseTitle in @target_values")
-    elif check_list_is_subset(target_values, get_unique_crs(df)):
-        df = df.query("CourseTitle in @target_values")
-        print(df.FacultyID.unique())
-    elif check_list_is_subset(target_values, get_unique_inst(df)):
-        df = df.query("CourseTitle in @target_values")
 
     instTable = pandas_df_agg(df, "FacultyID")
 
@@ -788,19 +817,22 @@ def pandas_df_agg(df, index=["Major"]):
 
 
 def section_analysis(
-    df,
+    df: pd.DataFrame,
     user_directory,
     target_courses,
     csv=False,
     min_enrollments=None,
     max_enrollments=None,
-    min_sections=None,
-    max_sections=None,
+    min_gpa=None,
+    max_gpa=None,
     generate_grade_dist=False,
 ):
-    target_courses = list(target_courses)
-    # sectionTable = gpa_by_section(df, target_courses)
+
     sectionTable = pandas_df_agg(df, "UniqueCourseID")
+
+
+    sectionTable['UniqueCourseID'] = sectionTable['UniqueCourseID'].astype(str)
+
     sectionTable = pd.merge(
         sectionTable,
         df[["UniqueCourseID", "CourseTitle"]],
@@ -810,12 +842,14 @@ def section_analysis(
     sectionTable = pd.merge(sectionTable, df[['FacultyID',  'UniqueCourseID']], on="UniqueCourseID", how="left")
 
 
-    sectionTable['UniqueCourseID'] = sectionTable['UniqueCourseID'].astype(str)
     sectionTable = sectionTable.drop_duplicates(subset=["UniqueCourseID"])
-    sectionTable = sectionTable[sectionTable["CourseTitle"].isin(target_courses)]
 
     sectionTable = drop_courses_by_threshold(
         sectionTable, "Enrollments", min_enrollments, max_enrollments
+    )
+
+    sectionTable = drop_courses_by_threshold(
+        sectionTable, "GPA", min_gpa, max_gpa
     )
     sectionTable = sectionTable.drop("Sections", axis=1)
     sectionTable = sectionTable.drop("Courses", axis=1)
@@ -916,8 +950,7 @@ def section_analysis(
             csv=csv,
         )
 
-    for key in dic.section_analysis_options.keys():
-        dic.section_analysis_options[key] = False
+    dic.reset_all_false()
 
 
 def CourseAnalysis(
@@ -1081,9 +1114,7 @@ def student_level_analysis(
         )
     )
 
-
-    df['StudentLevel'] = df['StudentLevel'].apply(lambda x: "Unknown" if pd.isna(x) or x == "" else x)
-
+    df = df[df['StudentLevel'].notna() & (df['StudentLevel'] != "")]
 
     df_agg = pandas_df_agg(df, "StudentLevel")
 
@@ -1401,7 +1432,7 @@ def graph_grade_distribution(
 
     target_values = df[column].unique()
 
-    grades = ["A", "A-", "B+", "B", "B-", "C+", "C", "C-"]
+    grades = ["A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D", "F"]
     value_colors = value_colors[: len(target_values)]
 
     df = df[df[f"{column}"].isin(target_values)]

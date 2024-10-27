@@ -39,6 +39,7 @@ department_analysis_options = {
     "Department vs Course #": False,
     "Department vs Section #": False,
     "Standard Deviation vs Enrollment": False,
+    "Enrollment vs GPA": False
 }
 
 studentlevel_analysis_options = {
@@ -60,14 +61,45 @@ studentcourse_analysis_options = {
 }
 
 student_analysis_options = {
-    "Group of Student vs Average GPA": False,
+    "GPA groups vs Student Count": False,
     "Student Course # Taken vs Student Average GPA": False,
 }
+
+
 
 def reset_all_false():
     options = [studentcourse_analysis_options, courselevel_analysis_options, studentlevel_analysis_options, 
                department_analysis_options, instructor_analysis_options, section_analysis_options,
-               major_analysis_options, course_analysis_options, student_analysis_options]
+               major_analysis_options, course_analysis_options, student_analysis_options, studentcourse_analysis_options]
     
     for option in options:
             option.update({key: False for key in option})
+
+def is_option_analysis(item: str) -> bool:
+    options = [studentcourse_analysis_options, courselevel_analysis_options, studentlevel_analysis_options,
+               department_analysis_options, instructor_analysis_options, section_analysis_options,
+               major_analysis_options, course_analysis_options, student_analysis_options, studentcourse_analysis_options]
+    for option in options:
+        if item in option:
+            return True
+    return False
+
+def change_analysis_value(item: str, value: bool):
+    options = [studentcourse_analysis_options, courselevel_analysis_options, studentlevel_analysis_options,
+               department_analysis_options, instructor_analysis_options, section_analysis_options,
+               major_analysis_options, course_analysis_options, student_analysis_options, studentcourse_analysis_options]
+    for option in options:
+        if item in option:
+            option[item] = value
+
+def output_analysis_values(item: str):
+    options = [studentcourse_analysis_options, courselevel_analysis_options, studentlevel_analysis_options,
+               department_analysis_options, instructor_analysis_options, section_analysis_options,
+               major_analysis_options, course_analysis_options, student_analysis_options, studentcourse_analysis_options]
+    for option in options:
+        if item in option:
+            return option[item]
+    return ''
+
+
+
