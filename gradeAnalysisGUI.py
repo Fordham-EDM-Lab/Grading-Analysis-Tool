@@ -11,7 +11,6 @@ import sys
 import subprocess
 import json
 import dictionary as dic
-import test_data_creation as randData
 from gradeAnalysisFunc import return_filtered_dataframe
 
 
@@ -137,12 +136,6 @@ class GradingAnalysisTool:
         tk.Button(self.root, text="Help", command=self.run_selected_help_command).grid(
             row=7, column=2
         )
-
-        if self.rand_data is None:
-            self.rand_data = tk.Button(
-                self.root, text="Use Random Data?", command=self.create_random_data
-            )
-            self.rand_data.grid(row=1, column=0)
 
 
         self.write_to_GUI()
@@ -546,7 +539,6 @@ class GradingAnalysisTool:
             "Section Analysis": self.command_SectionAnalysis,
             "Level Analysis": self.command_LevelAnalysis,
             "Student Analysis": self.command_student_analysis,
-            # "Run All Commands": self.command_All_Commands,
             "Quit": self.quit_program,
         }
 
@@ -565,18 +557,6 @@ class GradingAnalysisTool:
     ##########################################################################################
     ##specific functions
 
-    # used for Unique List to do some basic top level analysis on main attributes of the data
-    def numpy_array_metadata(self, arr):
-        if arr.size == 0:
-            print("The array is empty.")
-            return
-
-        print(f"Number of Unique Elements: {arr.size}")
-        print(f"Data Type of Elements: {arr.dtype}")
-
-        if arr.ndim == 1 and arr.size >= 5:
-            print("First 5 Elements:")
-            print(arr[:5])
 
     def quit_program(self):
         self.logger.info("Quitting Program")
@@ -1362,99 +1342,6 @@ class GradingAnalysisTool:
     ##########################################################################################################
     # commands
 
-    # What happens after gpa command is confirAnalysis
-    # def command_MajorDepartment(self):
-    #     self.logger.info("Executing GPA command")
-    #     self.commands_listbox.grid_forget()
-
-    #     self.run_command_button_toggle(state="disabled")
-    #     # creates listboxes for selection and waits for confirm to be clicked
-    #     self.departments_listbox_widget(row=3, column=1)
-    #     self.majors_listbox_widget(row=4, column=1)
-    #     self.thresholds_on_root(
-    #         which="sections_enrollment",
-    #     )
-    #     self.csv_checkbox_widget(state="normal", row=2, column=0)
-    #     self.grade_distribution_checkbox(state="normal", row=2, column=2)
-
-    #     # runs analysis
-    #     self.confirm_department_major_selections()
-    #     self.logger.debug("GPA command setup completed")
-
-    # def run_MajorDepartment_analysis(self):
-    #     self.logger.info("Running GPA analysis")
-
-    #     self.major = self.majors_listbox.item(self.majors_listbox.selection())
-    #     self.dept = self.departments_listbox.item(self.departments_listbox.selection())
-
-    #     gaf.MajorDepartmentAnalysis(
-    #         self.dataframe,
-    #         self.dept,
-    #         self.major,
-    #         user_directory=self.output_directory,
-    #         min_enrollments=self.min_enrollment,
-    #         max_enrollments=self.max_enrollment,
-    #         min_sections=self.min_sections,
-    #         max_sections=self.max_sections,
-    #         csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"),
-    #         generate_grade_dist=self.grade_dist_checkbox.get_dict_of_checkbox().get(
-    #             "Generate Grade Distribution?"
-    #         ),
-    #     )
-
-    #     self.hyperlink_filepath()
-    #     self.reset_gui()
-    #     self.logger.info("GUI reset after GPA analysis")
-
-    def run_unique_analysis(self):
-        self.logger.info(
-            f"Running unique analysis for selection: {self.unique_selection}"
-        )
-        if self.unique_selection == "Departments":
-            print("Departments: \n\n")
-            self.numpy_array_metadata(arr=gaf.get_unique_dept(self.dataframe))
-            print("\n\n")
-        elif self.unique_selection == "Majors":
-            print("Majors: \n\n")
-            self.numpy_array_metadata(arr=gaf.get_unique_major(self.dataframe))
-            print("\n\n")
-        elif self.unique_selection == "Instructor IDs":
-            print("Instructor IDs: \n\n")
-            self.numpy_array_metadata(arr=gaf.get_unique_inst(self.dataframe))
-            print("\n\n")
-        elif self.unique_selection == "Courses":
-            print("Courses: \n\n")
-            self.numpy_array_metadata(arr=gaf.get_unique_crs(self.dataframe))
-            print("\n\n")
-        elif self.unique_selection == "UniqueCourseID":
-            print("UniqueCourseID: \n\n")
-            self.numpy_array_metadata(arr=gaf.get_unique_crsid(self.dataframe))
-            print("\n\n")
-        elif self.unique_selection == "Student IDs":
-            print("Student IDs: \n\n")
-            self.numpy_array_metadata(arr=gaf.get_unique_stud(self.dataframe))
-            print("\n\n")
-        elif self.unique_selection == "All":
-            for name, array in [
-                ("Departments", gaf.get_unique_dept(self.dataframe)),
-                ("Majors", gaf.get_unique_major(self.dataframe)),
-                ("Instructor ID", gaf.get_unique_inst(self.dataframe)),
-                ("Courses", gaf.get_unique_crs(self.dataframe)),
-                ("Course IDs", gaf.get_unique_crsid(self.dataframe)),
-                ("Student IDs", gaf.get_unique_stud(self.dataframe)),
-            ]:
-                print(f"{name}:")
-                self.numpy_array_metadata(arr=array)
-                print("\n\n")
-        elif self.unique_selection == "Export All":
-            gaf.save_unique_entries(self.dataframe, user_directory=self.output_directory)
-            self.hyperlink_filepath()
-        else:
-            self.logger.warning("Invalid unique selection")
-            print("This is not a valid option.")
-        self.reset_gui()
-        self.logger.debug("Unique analysis completed")
-
     def command_DeptAnalysis(self):
         self.logger.info("Executing Department Analysis command")
         self.run_command_button_toggle(state="disabled")
@@ -1487,12 +1374,15 @@ class GradingAnalysisTool:
     def run_department_analysis(self):
         if self.generic_instance.isEmpty():
             departments = gaf.get_unique_dept(self.dataframe)
+            df = return_filtered_dataframe(self.dataframe, 'Department', departments)
+            departments = {x: gaw.get_random_values(gaw.get_non_red_colors())[0] for x in departments}
         else:
             departments = self.generic_instance.get_selected_options()
+            df = return_filtered_dataframe(self.dataframe, 'Department', list(departments.keys()))
 
         self.logger.info("Running department analysis")
         gaf.DepartmentAnalysis(
-            self.dataframe,
+            df,
             target_values=departments,
             user_directory=self.output_directory,
             min_enrollments=self.min_enrollment,
@@ -1540,7 +1430,7 @@ class GradingAnalysisTool:
         self.logger.debug("Instructor Analysis command setup completed")
 
     def update_generic_instance_instructor(self):
-        option = self.generic_instance.get_selected_options()[0]
+        option = list(self.generic_instance.get_selected_options().keys())[0]
         if option == "Department Instructors":
             self.generic_instance.destroy()
             self.generic_instance = gaw.tkDropdown(
@@ -1582,19 +1472,30 @@ class GradingAnalysisTool:
 
         return list(unique_items)
 
+
+
     def run_instructor_analysis(self):
-        if self.generic_instance.isEmpty():
+        if self.generic_instance.isEmpty() and gaf.find_column_by_value(self.dataframe, self.generic_instance.head_of_options()) == 'FacultyID':
             instructors = gaf.get_unique_inst(self.dataframe)
-        else:
-            instructors = self.generic_instance.get_selected_options()
-
-        if check_list_is_subset(instructors, gaf.get_unique_crscode(self.dataframe)):
-            df = return_filtered_dataframe(self.dataframe, 'CourseCode', instructors)
-        elif check_list_is_subset(instructors, gaf.get_unique_dept(self.dataframe)):
-            df = return_filtered_dataframe(self.dataframe, 'Department', instructors)
-        elif check_list_is_subset(instructors, gaf.get_unique_inst(self.dataframe)):
             df = return_filtered_dataframe(self.dataframe, 'FacultyID', instructors)
-
+            instructors = {x: gaw.get_random_values(gaw.get_non_red_colors())[0] for x in instructors}
+        elif not self.generic_instance.isEmpty() and gaf.find_column_by_value(self.dataframe, list(self.generic_instance.get_selected_options().keys())[0]) == 'FacultyID':
+            instructors = self.generic_instance.get_selected_options()
+            df = return_filtered_dataframe(self.dataframe, 'FacultyID', list(instructors.keys()))
+        elif self.generic_instance.isEmpty() and gaf.find_column_by_value(self.dataframe, self.generic_instance.head_of_options()) == 'CourseCode':
+            instructors = gaf.get_unique_crscode(self.dataframe)
+            df = return_filtered_dataframe(self.dataframe, 'CourseCode', instructors)
+            instructors = {x: gaw.get_random_values(gaw.get_non_red_colors())[0] for x in instructors}
+        elif not self.generic_instance.isEmpty() and gaf.find_column_by_value(self.dataframe, list(self.generic_instance.get_selected_options().keys())[0]) == 'CourseCode':
+            instructors = self.generic_instance.get_selected_options()
+            df = return_filtered_dataframe(self.dataframe, 'CourseCode', list(instructors.keys()))
+        elif self.generic_instance.isEmpty() and gaf.find_column_by_value(self.dataframe, self.generic_instance.head_of_options()) == 'Department':
+            instructors = gaf.get_unique_dept(self.dataframe)
+            df = return_filtered_dataframe(self.dataframe, 'Department', instructors)
+            instructors = {x: gaw.get_random_values(gaw.get_non_red_colors())[0] for x in instructors}
+        elif not self.generic_instance.isEmpty() and gaf.find_column_by_value(self.dataframe, list(self.generic_instance.get_selected_options().keys())[0]) == 'Department':
+            instructors = self.generic_instance.get_selected_options()
+            df = return_filtered_dataframe(self.dataframe, 'Department', list(instructors.keys()))
 
         self.logger.info("Running instructor analysis")
         gaf.InstructorAnalysis(
@@ -1642,11 +1543,14 @@ class GradingAnalysisTool:
     def run_major_analysis(self):
         if self.generic_instance.isEmpty():
             majors = gaf.get_unique_major(self.dataframe)
+            df = return_filtered_dataframe(self.dataframe, 'Major', majors)
+            majors = {x: gaw.get_random_values(gaw.get_non_red_colors())[0] for x in majors}
         else:
             majors = self.generic_instance.get_selected_options()
+            df = return_filtered_dataframe(self.dataframe, 'Major', list(majors.keys()))
 
         gaf.MajorAnalysis(
-            self.dataframe,
+            df,
             self.output_directory,
             self.min_enrollment,
             self.max_enrollment,
@@ -1665,7 +1569,7 @@ class GradingAnalysisTool:
         self.run_command_button_toggle(state="disabled")
         popup = self.threshold_popup(500, 125)
         self.create_analysis_dropdown(popup, dic.section_analysis_options, row=0, column=4)
-        self.enrollment_threshold_widget('normal', popup, row=0, column=0)
+        self.class_size_threshold_widget('normal', popup, row=0, column=0)
         self.gpa_threshold_widget('normal', popup, row=0, column=1)
 
         self.csv_checkbox_widget(
@@ -1693,7 +1597,7 @@ class GradingAnalysisTool:
         self.confirm_threshold_choice(self.run_section_analysis)
 
     def update_generic_instance_section(self):
-        option = self.generic_instance.get_selected_options()[0]
+        option = list(self.generic_instance.get_selected_options().keys())[0]
         if option == "Department Sections":
             self.generic_instance.destroy()
             self.generic_instance = gaw.tkDropdown(
@@ -1728,23 +1632,33 @@ class GradingAnalysisTool:
             )
 
     def run_section_analysis(self):
-        if self.generic_instance.isEmpty():
-            courses = gaf.get_unique_crscode(self.dataframe)
-        else:
-            courses = self.generic_instance.get_selected_options()
-
-        if check_list_is_subset(courses, gaf.get_unique_crscode(self.dataframe)):
-            df = return_filtered_dataframe(self.dataframe, 'CourseCode', courses)
-        elif check_list_is_subset(courses, gaf.get_unique_dept(self.dataframe)):
-            df = return_filtered_dataframe(self.dataframe, 'Department', courses)
-        elif check_list_is_subset(courses, gaf.get_unique_inst(self.dataframe)):
-            df = return_filtered_dataframe(self.dataframe, 'UniqueCourseID', courses)
+        if self.generic_instance.isEmpty() and gaf.find_column_by_value(self.dataframe, self.generic_instance.head_of_options()) == 'UniqueCourseID':
+            uid = gaf.get_unique_inst(self.dataframe)
+            df = return_filtered_dataframe(self.dataframe, 'UniqueCourseID', uid)
+            uid = {x: gaw.get_random_values(gaw.get_non_red_colors())[0] for x in uid}
+        elif not self.generic_instance.isEmpty() and gaf.find_column_by_value(self.dataframe, list(self.generic_instance.get_selected_options().keys())[0]) == 'UniqueCourseID':
+            uid = self.generic_instance.get_selected_options()
+            df = return_filtered_dataframe(self.dataframe, 'FacultyID', list(uid.keys()))
+        elif self.generic_instance.isEmpty() and gaf.find_column_by_value(self.dataframe, self.generic_instance.head_of_options()) == 'CourseCode':
+            uid = gaf.get_unique_crscode(self.dataframe)
+            df = return_filtered_dataframe(self.dataframe, 'UniqueCourseID', uid)
+            uid = {x: gaw.get_random_values(gaw.get_non_red_colors())[0] for x in uid}
+        elif not self.generic_instance.isEmpty() and gaf.find_column_by_value(self.dataframe, list(self.generic_instance.get_selected_options().keys())[0]) == 'CourseCode':
+            uid = self.generic_instance.get_selected_options()
+            df = return_filtered_dataframe(self.dataframe, 'CourseCode', list(uid.keys()))
+        elif self.generic_instance.isEmpty() and gaf.find_column_by_value(self.dataframe, self.generic_instance.head_of_options()) == 'Department':
+            uid = gaf.get_unique_dept(self.dataframe)
+            df = return_filtered_dataframe(self.dataframe, 'Department', uid)
+            uid = {x: gaw.get_random_values(gaw.get_non_red_colors())[0] for x in uid}
+        elif not self.generic_instance.isEmpty() and gaf.find_column_by_value(self.dataframe, list(self.generic_instance.get_selected_options().keys())[0]) == 'Department':
+            uid = self.generic_instance.get_selected_options()
+            df = return_filtered_dataframe(self.dataframe, 'Department', list(uid.keys()))
 
 
         gaf.section_analysis(
             df,
             user_directory=self.output_directory,
-            target_courses=courses,
+            target_courses=uid,
             min_enrollments=self.min_enrollment,
             max_enrollments=self.max_enrollment,
             min_gpa=self.min_gpa,
@@ -1785,13 +1699,23 @@ class GradingAnalysisTool:
         self.confirm_threshold_choice(self.run_crs_analysis)
 
     def run_crs_analysis(self):
-        if self.generic_instance.isEmpty():
-            courses = gaf.get_unique_crs(self.dataframe)
-        else:
+        if self.generic_instance.isEmpty() and gaf.find_column_by_value(self.dataframe, self.generic_instance.head_of_options()) == 'CourseCode':
+            courses = gaf.get_unique_crscode(self.dataframe)
+            df = return_filtered_dataframe(self.dataframe, 'CourseCode', courses)
+            courses = {x: gaw.get_random_values(gaw.get_non_red_colors())[0] for x in courses}
+        elif not self.generic_instance.isEmpty() and gaf.find_column_by_value(self.dataframe, list(self.generic_instance.get_selected_options().keys())[0]) == 'CourseCode':
             courses = self.generic_instance.get_selected_options()
+            df = return_filtered_dataframe(self.dataframe, 'CourseCode', list(courses.keys()))
+        elif self.generic_instance.isEmpty() and gaf.find_column_by_value(self.dataframe, self.generic_instance.head_of_options()) == 'Department':
+            courses = gaf.get_unique_dept(self.dataframe)
+            df = return_filtered_dataframe(self.dataframe, 'Department', courses)
+            courses = {x: gaw.get_random_values(gaw.get_non_red_colors())[0] for x in courses}
+        elif not self.generic_instance.isEmpty() and gaf.find_column_by_value(self.dataframe, list(self.generic_instance.get_selected_options().keys())[0]) == 'Department':
+            courses = self.generic_instance.get_selected_options()
+            df = return_filtered_dataframe(self.dataframe, 'Department', list(courses.keys()))
 
         gaf.CourseAnalysis(
-            self.dataframe,
+            df,
             self.output_directory,
             self.min_enrollment,
             courses,
@@ -1807,7 +1731,7 @@ class GradingAnalysisTool:
         self.reset_gui()
 
     def update_generic_instance_course(self):
-        option = self.generic_instance.get_selected_options()[0]
+        option = list(self.generic_instance.get_selected_options().keys())[0]
         if option == "Department Courses":
             self.generic_instance.destroy()
             self.generic_instance = gaw.tkDropdown(
@@ -1825,7 +1749,7 @@ class GradingAnalysisTool:
                 self.popup_box_threshold,
                 row=1,
                 column=4,
-                options_dict={str(crs): False for crs in gaf.get_unique_crs(self.dataframe)},
+                options_dict={str(crs): False for crs in gaf.get_unique_crscode(self.dataframe)},
                 initial_message="Get Courses Manually",
                 allow_multiple_entries=True,
             )
@@ -1976,137 +1900,6 @@ class GradingAnalysisTool:
         self.hyperlink_filepath()
         self.logger.info("Student analysis completed")
         self.reset_gui()
-
-
-
-    # def command_All_Commands(self):
-    #     self.logger.info("Executing 'Run All Commands'")
-    #     self.commands_listbox.grid_forget()
-
-    #     self.run_command_button_toggle(state="disabled")
-
-    #     self.departments_listbox_widget(row=3, column=0)
-    #     self.majors_listbox_widget(row=3, column=1)
-    #     self.faculty_listbox_widget(row=3, column=2)
-    #     self.csv_checkbox_widget(where=self.root, state="normal", row=2, column=0)
-    #     self.grade_distribution_checkbox(
-    #         where=self.root, state="normal", row=2, column=2
-    #     )
-    #     self.thresholds_on_root(which="sections_enrollment")
-    #     self.confirm_faculty_dept_major_selection()
-    #     self.logger.debug("'Run All Commands' setup completed")
-
-    # def run_every_command(self):
-    #     self.logger.info("Running all commands")
-    #     self.get_thresholds()
-    #     gaf.save_unique_entries(self.dataframe, user_directory=self.output_directory)
-
-    #     gaf.MajorDepartmentAnalysis(
-    #         self.dataframe,
-    #         self.dept,
-    #         self.major,
-    #         user_directory=self.output_directory,
-    #         min_enrollments=self.min_enrollment,
-    #         max_enrollments=self.max_enrollment,
-    #         min_sections=self.min_sections,
-    #         max_sections=self.max_sections,
-    #         csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"),
-    #         generate_grade_dist=self.grade_dist_checkbox.get_dict_of_checkbox().get(
-    #             "Generate Grade Distribution?"
-    #         ),
-    #     )
-
-    #     gaf.DepartmentAnalysis(
-    #         self.dataframe,
-    #         user_directory=self.output_directory,
-    #         min_enrollments=self.min_enrollment,
-    #         max_enrollments=self.max_enrollment,
-    #         min_sections=self.min_sections,
-    #         max_sections=self.max_sections,
-    #         csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"),
-    #         generate_grade_dist=self.grade_dist_checkbox.get_dict_of_checkbox().get(
-    #             "Generate Grade Distribution?"
-    #         ),
-    #     )
-
-    #     gaf.InstructorAnalysis(
-    #         self.dataframe,
-    #         user_directory=self.output_directory,
-    #         min_enrollments=self.min_enrollment,
-    #         max_enrollments=self.max_enrollment,
-    #         min_sections=self.min_sections,
-    #         max_sections=self.max_sections,
-    #         csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"),
-    #         generate_grade_dist=self.grade_dist_checkbox.get_dict_of_checkbox().get(
-    #             "Generate Grade Distribution?"
-    #         ),
-    #     )
-
-    #     gaf.MajorAnalysis(
-    #         self.dataframe,
-    #         self.output_directory,
-    #         self.min_enrollment,
-    #         self.max_enrollment,
-    #         self.min_sections,
-    #         self.max_sections,
-    #         csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"),
-    #         generate_grade_dist=self.grade_dist_checkbox.get_dict_of_checkbox().get(
-    #             "Generate Grade Distribution?"
-    #         ),
-    #     )
-
-    #     gaf.section_analysis(
-    #         self.dataframe,
-    #         self.output_directory,
-    #         target_courses="Calculus I",
-    #         csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"),
-    #         min_enrollments=self.min_enrollment,
-    #         max_enrollments=self.max_enrollment,
-    #         min_sections=self.min_sections,
-    #         max_sections=self.max_sections,
-    #         generate_grade_dist=self.grade_dist_checkbox.get_dict_of_checkbox().get(
-    #             "Generate Grade Distribution?"
-    #         ),
-    #     )
-
-    #     gaf.CourseAnalysis(
-    #         self.dataframe,
-    #         self.output_directory,
-    #         self.min_enrollment,
-    #         self.max_enrollment,
-    #         self.min_sections,
-    #         self.max_sections,
-    #         csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"),
-    #     )
-
-    #     gaf.student_level_analysis(
-    #         self.dataframe,
-    #         user_directory=self.output_directory,
-    #         min_enrollments=self.min_enrollment,
-    #         max_enrollments=self.max_enrollment,
-    #         csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"),
-    #     )
-    #     gaf.course_level_analysis(
-    #         self.dataframe,
-    #         heatmap=self.heatmap_checkbox.get_dict_of_checkbox().get("Heatmap"),
-    #         user_directory=self.output_directory,
-    #         min_enrollments=self.min_enrollment,
-    #         max_enrollments=self.max_enrollment,
-    #         csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"),
-    #     )
-
-    #     self.hyperlink_filepath()
-    #     self.reset_gui()
-    #     self.logger.debug("All commands executed")
-
-    def create_random_data(self, num_rows = 40000):
-        rand_df = randData.create_random_dataframe(num_rows = num_rows)
-        rand_df.to_csv('random_csv')
-        self.update_filestate(file=gaf.file_path('random_df.csv'), which=self.input_file_name)
-        print('Input File updated, Dataframe changed, to undo this, change the path of the input file')
-        self.dataframe = gaf.pd.read_csv(gaf.file_path(self.input_file_name))
-
-
 
 if __name__ == "__main__":
     GradingAnalysisTool()  # Run the tool

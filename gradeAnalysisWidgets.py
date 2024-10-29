@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 from functools import partial
+import mplcursors
 import sys
 import logging
 import platform
@@ -31,6 +32,8 @@ from functools import partial
 from tkinter import colorchooser
 import dictionary
 import csv
+
+import gradeAnalysisFunc
 
 
 def popup(self, title="", popup_text=""):
@@ -469,11 +472,10 @@ class tkMatplot:
         x_label=None,
         y_label=None,
         plot_type=None,
-        colors=None,
         color=None,
+        colors=None,
         x_plot=None,
         y_plot=None,
-        color_column = None,
         data_type=None,
         output_directory=None,
     ):
@@ -499,8 +501,8 @@ class tkMatplot:
         self.x_label = x_label
         self.y_label = y_label
         self.plot_type = plot_type
-        self.colors = colors
         self.color = color
+        self.colors = colors
         self.x_plot = x_plot
         self.y_plot = y_plot
         self.df = df
@@ -508,7 +510,6 @@ class tkMatplot:
         self.title = title
         self.tree = None
         self.highlighted_point = None
-        self.color_column = color_column
         self.ax = None
         self.default_directory = os.path.join(output_directory, 'Binexport.txt') if output_directory else (os.getcwd(), 'Binexport.txt')
         self.left_frame = None
@@ -549,17 +550,21 @@ class tkMatplot:
         )
         self.help_button = None
         self.logger.info("tkMatplot class initialized")
-        if self.colors is None:
-            self.is_list = True
-        else:
-            self.is_list = False
+
+    def sort_dataframe(self, df, sort_order: str = 'descending', by: str = ''):
+        if self.sort_order == "ascending":
+            df.sort_values(by=by, ascending=True, inplace=True)
+        elif self.sort_order == "descending":
+            df.sort_values(by=by, ascending=False, inplace=True)
+        elif self.sort_order == "random":
+            df = df.sample(frac=1).reset_index(drop=True)
+        elif self.sort_order == "none":
+            df = df.loc[self.original_index]
+        return df
 
 
 
     def plot(self):
-        if self.is_list:
-            self.colors = {key: self.color for key in self.df[self.x_plot]}
-
 
         self.logger.info("Creating plot")
 
@@ -586,22 +591,14 @@ class tkMatplot:
             df = self.custom_bin_agg(df, self.bin_selected_groups)
             self.logger.info("Creating plot with custom bin aggregation")
             self.logger.info(f"Sort order: {self.sort_order}")
-            if self.sort_order == "ascending":
-                df.sort_values(by=current_yplot, ascending=True, inplace=True)
-            elif self.sort_order == "descending":
-                df.sort_values(by=current_yplot, ascending=False, inplace=True)
-            elif self.sort_order == "random":
-                df = df.sample(frac=1).reset_index(drop=True)
-            elif self.sort_order == "none":
-                df = df.loc[self.original_index]
-
-
+            df = self.sort_dataframe(df, sort_order=self.sort_order, by=current_yplot)
 
             if self.normalize_option != "none":
                 self.logger.info(f"Normalizing data using '{self.normalize_option}' method")
                 normalize_dataframe_column(df, current_yplot, self.normalize_option)
                 current_yplot = f"{self.normalize_option}Normalized{current_yplot}"
                 self.logger.info(f"Normalized column: {current_yplot}")
+
             for _, bin_data in df.iterrows():
                 color = bin_data['Color']
                 bin_name = bin_data['Bin']
@@ -621,19 +618,14 @@ class tkMatplot:
             self.logger.info("Creating plot with numerical bin aggregation")
             df = self.bin_agg_tuples(df, self.bin_selected_groups, self.x_plot)
             self.logger.info(f"Sort order: {self.sort_order}")
-            if self.sort_order == "ascending":
-                df.sort_values(by=current_yplot, ascending=True, inplace=True)
-            elif self.sort_order == "descending":
-                df.sort_values(by=current_yplot, ascending=False, inplace=True)
-            elif self.sort_order == "random":
-                df = df.sample(frac=1).reset_index(drop=True)
-            elif self.sort_order == "none":
-                df = df.loc[self.original_index]
+            df = self.sort_dataframe(df, self.sort_order, current_yplot)
+
             if self.normalize_option != "none":
                 self.logger.info(f"Normalizing data using '{self.normalize_option}' method")
                 normalize_dataframe_column(df, current_yplot, self.normalize_option)
                 current_yplot = f"{self.normalize_option}Normalized{current_yplot}"
                 self.logger.info(f"Normalized column: {current_yplot}")
+
             for bin_data in df.iterrows():
                 bin_name = bin_data[1]['Bin']
                 x_data = [bin_name]
@@ -649,14 +641,7 @@ class tkMatplot:
             self.logger.info("Creating plot without bin aggregation")
             self.logger.info(f"Sort order: {self.sort_order}")
             self.original_index = df.index.copy()
-            if self.sort_order == "ascending":
-                df.sort_values(by=current_yplot, ascending=True, inplace=True)
-            elif self.sort_order == "descending":
-                df.sort_values(by=current_yplot, ascending=False, inplace=True)
-            elif self.sort_order == "random":
-                df = df.sample(frac=1).reset_index(drop=True)
-            elif self.sort_order == "none":
-                df = df.loc[self.original_index]
+            df = self.sort_dataframe(df, sort_order=self.sort_order, by=current_yplot)
 
             if self.normalize_option != "none":
                 self.logger.info(f"Normalizing data using '{self.normalize_option}' method")
@@ -665,33 +650,34 @@ class tkMatplot:
                 self.logger.info(f"Normalized column: {current_yplot}")
 
             if self.plot_type == "line":
-                for category in df[self.color_column].unique():
-                    category_mask = df[self.color_column] == category
-                    self.ax.plot(
-                        df[self.x_plot][category_mask],
-                        df[current_yplot][category_mask],
-                        color=self.colors[category],
-                        marker="o",
-                    )
+                line_plot = self.ax.plot(df[self.x_plot], df[current_yplot], color=df['color'].iloc[0])
+                cursor = mplcursors.cursor(line_plot, hover=True)
             elif self.plot_type == "scatter":
-                for category in df[self.color_column].unique():
-                    category_mask = df[self.color_column] == category
-                    self.ax.scatter(
-                        df[self.x_plot][category_mask],
-                        df[current_yplot][category_mask],
-                        color=self.colors[category],
-                    )
+                scatter_plot = self.ax.scatter(df[self.x_plot], df[current_yplot], color=df['color'])
+                cursor = mplcursors.cursor(scatter_plot, hover=True)
             elif self.plot_type == "bar":
-                for category in df[self.color_column].unique():
-                    category_mask = df[self.color_column] == category
-                    self.ax.bar(
-                        df[self.x_plot][category_mask],
-                        df[current_yplot][category_mask],
-                        color=self.colors[category],
-                        align='center',
-                    )
+                bar_plot = self.ax.bar(df[self.x_plot], df[current_yplot], color=df['color'])
+                cursor = mplcursors.cursor(bar_plot, hover=True)
                 self.ax.set_ylim(0, df[current_yplot].max() + 1)
 
+        @cursor.connect("add")
+        def on_add(sel):
+            index = sel.index
+            xplt = df[self.x_plot].iloc[index]
+            enrollments = df['Enrollments'].iloc[index]
+            gpa = df['GPA'].iloc[index]
+            stddev = df['stddev'].iloc[index]
+            color_representation = self.colors.get(xplt, "Unknown")
+            sel.annotation.set_text(
+                f"{self.x_plot}: {xplt}\n"
+                f"Enrollments: {enrollments}\n"
+                f"GPA: {gpa}\n"
+                f"Standard Deviation: {stddev}\n"
+                f"Color is: {color_representation}"
+            )
+
+        for label, color in self.colors.items():
+            self.ax.scatter([], [], color=color, label=label)
 
         self.ax.set_xlabel(self.x_label, fontsize=12)
         self.ax.set_ylabel(self.y_label, fontsize=12)
@@ -700,7 +686,6 @@ class tkMatplot:
         self.ax.grid(True)
         self.ax.tick_params(axis="x", rotation=90, labelsize=9)
 
-        self.ax.legend()
 
         self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
@@ -712,9 +697,6 @@ class tkMatplot:
             xplot='Bin'
         else:
             xplot=self.x_plot
-
-        self.fig.canvas.mpl_connect("motion_notify_event", partial(self.on_move, df, xplot, current_yplot))
-        self.fig.canvas.mpl_connect("axes_leave_event", self.axis_leave_event)
 
         if self.left_frame is not None:
             self.left_frame.destroy()
@@ -739,79 +721,6 @@ class tkMatplot:
 
         self.canvas.draw()
 
-    def axis_leave_event(self, event):
-        if hasattr(self, "hover_annotation") and self.hover_annotation is not None:
-            try:
-                self.hover_annotation.remove()
-                self.hover_annotation = None
-                self.fig.canvas.draw_idle()
-            except ValueError:
-                pass
-
-    def on_move(self,df, xplot, yplot ,event):
-        ax = None
-        nearest_x_idx = None
-        if event.inaxes:
-            ax = event.inaxes
-            x, y = event.xdata, event.ydata
-
-        if ax is not None and pd.api.types.is_numeric_dtype(df[xplot]):
-            df[xplot] = pd.to_numeric(df[xplot], errors="coerce")
-            nearest_x_idx = (df[xplot] - x).abs().idxmin()
-        elif ax is not None:
-            x_ticks_labels = [tick.get_text() for tick in ax.get_xticklabels()]
-            x_ticks_positions = ax.get_xticks()
-
-            if len(x_ticks_labels) > 0:
-                nearest_tick_pos = np.abs(x_ticks_positions - x).argmin()
-                nearest_x_label = x_ticks_labels[nearest_tick_pos]
-
-                if nearest_x_label in df[xplot].values:
-                    nearest_x_idx = df[
-                        df[xplot] == nearest_x_label
-                    ].index[0]
-                else:
-                    return
-
-        if nearest_x_idx is None:
-            return
-
-        unwanted_col = [
-            "A",
-            "A-",
-            "B+",
-            "B",
-            "B-",
-            "C+",
-            "C",
-            "C-",
-            "D",
-            "F",
-            "kurtosis",
-            "skewness",
-            "avg_gpa_change",
-            "avg_gpaw_change",
-            "CoV(%)",
-            "GPAW"
-        ]
-        row_data = df.loc[nearest_x_idx]
-        row_data = row_data.drop(labels=unwanted_col, errors="ignore")
-        display_text = "\n".join([f"{col}: {val}" for col, val in row_data.items()])
-
-        if hasattr(self, "hover_annotation") and self.hover_annotation is not None:
-            try:
-                self.hover_annotation.remove()
-            except ValueError:
-                pass
-
-        self.hover_annotation = ax.annotate(
-            display_text,
-            xy=(x, y),
-            xytext=(20, 20),
-            textcoords="offset points",
-            bbox=dict(boxstyle="round", fc="w"),
-        )
-        self.fig.canvas.draw_idle()
 
 
     def change_plot_type(self):
@@ -1058,11 +967,11 @@ class tkMatplot:
         df['Color'] = None
 
         self.logger.info("Assigning bins and colors to data")
-        for group, color in selected_groups:
+        for group, colors in selected_groups:
             bin_name = "[" + ", ".join(group) + "]"
             for item in group:
                 df.loc[df[self.x_plot] == item, 'Bin'] = bin_name
-                df.loc[df[self.x_plot] == item, 'Color'] = color
+                df.loc[df[self.x_plot] == item, 'Color'] = colors[0]
 
         df['Bin'] = df['Bin'].fillna('others')
         df['Color'] = df['Color'].fillna('grey')  # Default color for 'others' bin
@@ -1271,19 +1180,9 @@ class BinPopup():
         self.group_frame = tk.Frame(self.scrollable_frame)
         self.group_frame.grid(row=self.current_row, column=self.current_col, sticky='nsew', padx=10, pady=10)
 
-        self.logger.info("Creating Plot Color Options")
-        self.plot_colors = tkOptionMenu(
-            master=self.group_frame,
-            options=get_random_values(get_non_red_colors()),
-            pre_selected=get_random_values(get_non_red_colors())[0],
-            label_text="Change Bin Color",
-            colors=get_non_red_colors_name_hex()
-        )
-        self.plot_colors.grid(row=0, column=0)
-
         self.logger.info("Creating Dropdown Options")
         self.dropdown = tkDropdown(
-            master=self.group_frame, options_dict=self.options_dict, row=1, column=0,
+            master=self.group_frame, options_dict=self.options_dict, row=0, column=0,
             initial_message='Create a Group', allow_multiple_entries=True,
             filename='group_options', scrolltextbox_height=5, scrolltextbox_width=20, path=self.path
         )
@@ -1298,10 +1197,10 @@ class BinPopup():
 
     def add_group(self):
         self.logger.info("Adding group")
-        selected_options = self.dropdown.get_selected_options()
-        selected_color = self.plot_colors.get_selected_option()
-        if selected_options and selected_color:
-            self.groups.append((selected_options, selected_color))
+        selected_options = list(self.dropdown.get_selected_options().keys())
+        selected_colors = list(self.dropdown.get_selected_options().values())
+        if selected_options and selected_colors:
+            self.groups.append((selected_options, selected_colors))
             self.current_row += 1
             if self.current_row == 3:
                 self.current_row = 0
@@ -1325,8 +1224,8 @@ class BinPopup():
 
     def accept(self):
         self.logger.info("Accepting selected groups")
-        selected_options = self.dropdown.get_selected_options()
-        selected_color = self.plot_colors.get_selected_option()
+        selected_options = list(self.dropdown.get_selected_options().keys())
+        selected_color = list(self.dropdown.get_selected_options().values())
         if selected_options and selected_color:
             self.groups.append((selected_options, selected_color))
 
@@ -1509,7 +1408,7 @@ class tkDropdown():
             selected_key in self.options_dict
             and selected_key not in self.selected_options
         ):
-            self.selected_options.append(selected_key)
+            self.selected_options[selected_key] = ''
 
         if callable(self.command):
             self.command()
@@ -1537,6 +1436,9 @@ class tkDropdown():
     def isEmpty(self):
         self.logger.info("Checking if selected options is empty")
         return not self.selected_options
+
+    def head_of_options(self):
+        return list(self.options_dict.keys())[1]
 
     def clearList(self):
         self.logger.info("Clearing selected options")
