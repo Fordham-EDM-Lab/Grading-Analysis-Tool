@@ -660,24 +660,17 @@ class tkMatplot:
                 cursor = mplcursors.cursor(bar_plot, hover=True)
                 self.ax.set_ylim(0, df[current_yplot].max() + 1)
 
+        excluded_columns = ['kurtosis',	'skewness',	'CoV(%)', 'ModeGPA', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D', 'F', 'color', 'avg_gpa_change', 'avg_gpaw_change']
+
         @cursor.connect("add")
         def on_add(sel):
             index = sel.index
-            xplt = df[self.x_plot].iloc[index]
-            enrollments = df['Enrollments'].iloc[index]
-            gpa = df['GPA'].iloc[index]
-            stddev = df['stddev'].iloc[index]
-            color_representation = self.colors.get(xplt, "Unknown")
-            sel.annotation.set_text(
-                f"{self.x_plot}: {xplt}\n"
-                f"Enrollments: {enrollments}\n"
-                f"GPA: {gpa}\n"
-                f"Standard Deviation: {stddev}\n"
-                f"Color is: {color_representation}"
-            )
-
-        for label, color in self.colors.items():
-            self.ax.scatter([], [], color=color, label=label)
+            annotation_text = []
+            for col in df.columns:
+                if col not in excluded_columns:
+                    col_value = df[col].iloc[index]
+                    annotation_text.append(f"{col}: {col_value}")
+            sel.annotation.set_text("\n".join(annotation_text))
 
         self.ax.set_xlabel(self.x_label, fontsize=12)
         self.ax.set_ylabel(self.y_label, fontsize=12)
