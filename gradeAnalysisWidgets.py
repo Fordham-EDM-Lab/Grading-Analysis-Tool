@@ -586,7 +586,6 @@ class tkMatplot:
 
         self.logger.info(f"Plotting data using {self.plot_type} plot type")
 
-
         if self.graphing_bin_check:
             df = self.custom_bin_agg(df, self.bin_selected_groups)
             self.logger.info("Creating plot with custom bin aggregation")
@@ -671,6 +670,8 @@ class tkMatplot:
                     col_value = df[col].iloc[index]
                     annotation_text.append(f"{col}: {col_value}")
             sel.annotation.set_text("\n".join(annotation_text))
+
+
 
         self.ax.set_xlabel(self.x_label, fontsize=12)
         self.ax.set_ylabel(self.y_label, fontsize=12)
@@ -1386,13 +1387,13 @@ class tkDropdown():
             self.master,
             text="Export Choices",
             command=self.export_to_csv,
-        ).grid(row=self.row + 2, column=self.column)
+        ).grid(row=self.row + 2, column=self.column - 1)
 
         tk.Button(
             self.master,
             text="Import Choices",
             command=self.import_from_csv,
-        ).grid(row=self.row + 2, column=self.column + 1)
+        ).grid(row=self.row + 2, column=self.column)
 
     def update_command(self, *args):
         selected_key = self.dropdown.get()

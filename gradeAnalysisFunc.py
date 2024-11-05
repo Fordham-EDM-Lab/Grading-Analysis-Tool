@@ -181,7 +181,7 @@ def DepartmentAnalysis(
             colors=target_values,
             color='black',
             x_plot="Department",
-            y_plot="GPA",
+            y_plot="GPAW",
             df=deptTable,
             output_directory=user_directory,
         )
@@ -265,7 +265,7 @@ def DepartmentAnalysis(
             colors=target_values,
             color="teal",
             x_plot="Enrollments",
-            y_plot="GPA",
+            y_plot="GPAW",
             df=deptTable,
         )
         plotter.plot()
@@ -276,10 +276,6 @@ def DepartmentAnalysis(
         graph_grade_distribution(
             df=deptTable,
             column="Department",
-            target_values=target_values,
-            value_colors=gaw.get_non_red_colors(),
-            user_directory=user_directory,
-            csv=csv,
         )
 
     dic.reset_all_false()
@@ -336,10 +332,6 @@ def InstructorAnalysis(
         graph_grade_distribution(
             df=instTable,
             column="FacultyID",
-            target_values=target_values,
-            value_colors=gaw.get_non_red_colors(),
-            user_directory=user_directory,
-            csv=csv,
         )
 
     if dic.instructor_analysis_options["Instructor vs GPA"]:
@@ -584,10 +576,6 @@ def MajorAnalysis(
         graph_grade_distribution(
             df=mjrTable,
             column="Major",
-            target_values=target_values,
-            value_colors=gaw.get_non_red_colors(),
-            user_directory=user_directory,
-            csv=csv,
         )
 
 
@@ -800,10 +788,6 @@ def section_analysis(
         graph_grade_distribution(
             df=sectionTable,
             column="UniqueCourseID",
-            target_values=target_courses,
-            value_colors=gaw.get_random_values(gaw.get_non_red_colors()),
-            user_directory=user_directory,
-            csv=csv,
         )
 
     dic.reset_all_false()
@@ -827,12 +811,17 @@ def CourseAnalysis(
 
     crsTable = pd.merge(crsTable, df[['CourseCode',  'Department']], on="CourseCode", how="left")
 
+    # crsTable = pd.merge(crsTable, df[['CourseCode',  'CourseTitle']], on="CourseCode", how="left")
+
+
     crsTable = drop_courses_by_threshold(
         crsTable, "Enrollments", min_enrollments, max_enrollments
     )
     crsTable = drop_courses_by_threshold(
         crsTable, "Sections", min_sections, max_sections
     )
+
+    crsTable.drop_duplicates(subset=['CourseCode'], inplace=True)
 
     if csv:
         save_path = os.path.join(user_directory, "crsTable.csv")
@@ -851,7 +840,7 @@ def CourseAnalysis(
             plot_type="bar",
             color=gaw.get_random_values(gaw.get_non_red_colors())[0],
             colors=target_values,
-            x_plot="CourseTitle",
+            x_plot="CourseCode",
             y_plot="GPA",
             df=crsTable,
             output_directory=user_directory,
@@ -868,7 +857,7 @@ def CourseAnalysis(
             plot_type="scatter",
             color=gaw.get_random_values(gaw.get_non_red_colors())[0],
             colors=target_values,
-            x_plot="CourseTitle",
+            x_plot="CourseCode",
             y_plot="Enrollments",
             df=crsTable,
             output_directory=user_directory,
@@ -885,7 +874,7 @@ def CourseAnalysis(
             plot_type="scatter",
             color=gaw.get_random_values(gaw.get_non_red_colors())[0],
             colors=target_values,
-            x_plot="CourseTitle",
+            x_plot="CourseCode",
             y_plot="Sections",
             df=crsTable,
             output_directory=user_directory,
@@ -919,7 +908,7 @@ def CourseAnalysis(
             plot_type="bar",
             color=gaw.get_random_values(gaw.get_non_red_colors())[0],
             colors=target_values,
-            x_plot="CourseTitle",
+            x_plot="CourseCode",
             y_plot="stddev",
             df=crsTable,
             output_directory=user_directory,
@@ -936,7 +925,7 @@ def CourseAnalysis(
             plot_type="scatter",
             color=gaw.get_random_values(gaw.get_non_red_colors())[0],
             colors=target_values,
-            x_plot="GPA",
+            x_plot="GPAW",
             y_plot="stddev",
             df=crsTable,
         )
@@ -945,14 +934,10 @@ def CourseAnalysis(
     if generate_grade_dist:
         graph_grade_distribution(
             df=crsTable,
-            target_values=target_values,
-            column="CourseTitle",
-            value_colors=gaw.get_random_values(gaw.get_non_red_colors()),
-            user_directory=user_directory,
-            csv=csv,
+            column="CourseCode",
         )
 
-        dic.reset_all_false()
+    dic.reset_all_false()
 
 
 
@@ -1048,10 +1033,6 @@ def student_level_analysis(
         graph_grade_distribution(
             df=df_agg,
             column="StudentLevel",
-            target_values=df_agg["StudentLevel"].unique(),
-            value_colors=gaw.get_non_red_colors(),
-            user_directory=user_directory,
-            csv=csv,
         )
 
 
@@ -1159,10 +1140,6 @@ def course_level_analysis(
         graph_grade_distribution(
             df=df_agg,
             column="CourseLevel",
-            target_values=df_agg["CourseLevel"].unique(),
-            value_colors=gaw.get_non_red_colors(),
-            user_directory=user_directory,
-            csv=csv,
         )
 
 
@@ -1234,10 +1211,6 @@ def student_analysis(
         graph_grade_distribution(
             df=df_agg,
             column="SID",
-            target_values=df_agg["SID"].unique(),
-            value_colors=gaw.get_non_red_colors(),
-            user_directory=user_directory,
-            csv=csv,
         )
 
     dic.reset_all_false()
@@ -1307,126 +1280,105 @@ def normalize_rows_by_grade_frequency(df, column, grade_columns):
 
 
 def graph_grade_distribution(
-    df,
-    column,
-    user_directory,
-    csv=False,
-    target_values=None,
-    value_colors=None,
-    cutoff_enrollment=100,
-):
-    if target_values is None:
-        target_values = []
-    if value_colors is None:
-        value_colors = ['blue', 'green', 'red', 'cyan', 'magenta', 'yellow', 'black']
+        df,
+        column,
+    ):
+        grades = ["A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D", "F"]
 
-    target_values = df[column].unique()
+        # Ensure color column exists
+        if 'color' not in df.columns:
+            raise ValueError("The DataFrame must have a 'color' column for plotting.")
 
-    grades = ["A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D", "F"]
-    value_colors = value_colors[: len(target_values)]
+        df = normalize_rows_by_grade_frequency(df, column, grades)
 
-    df = df[df[f"{column}"].isin(target_values)]
+        fig = plt.figure(figsize=(20, 8.5))
+        ax = fig.add_subplot(111)
 
-    df = normalize_rows_by_grade_frequency(df, column, grades)
+        scatter_plots = {}  # Dictionary to store scatter plot references and original states
 
+        # Iterate through the DataFrame and plot each row
+        for _, row in df.iterrows():
+            grade_counts = [
+                round(row[grade], 4) if grade in row and not pd.isna(row[grade]) else 0
+                for grade in grades
+            ]
+            color = row['color']
+            label = row[column]
 
-    if csv:
-        save_path = os.path.join(user_directory, f"grade_distribution_{column}.csv")
-        df.to_csv(save_path, encoding="utf-8-sig")
-        print("\n\nFile Created:", f" {save_path}\n\n")
-
-    fig = plt.figure(figsize=(20, 8.5))
-    ax = fig.add_subplot(111)
-
-    scatter_plots = {}  # Dictionary to store scatter plot references and original states
-
-    for i, value in enumerate(target_values):
-        value_df = df[df[f"{column}"] == value]
-        grade_counts = [
-            round(
-                value_df[grade].iloc[0], 4
+            scatter = ax.scatter(
+                grades,
+                grade_counts,
+                label=f"{label}",
+                color=color,
+                edgecolors="black",
+                linewidths=1,
+                s=100
             )
-            if (not value_df.empty and grade in value_df.columns)
-            else 0
-            for grade in grades
-        ]
+            ax.plot(
+                grades,
+                grade_counts,
+                color='black',
+                linewidth=2,
+                linestyle="-",
+            )
+            ax.plot(
+                grades,
+                grade_counts,
+                color=color,
+                linewidth=0.5,
+                linestyle="-",
+            )
+            # Store the scatter plot and its original facecolors and sizes
+            scatter_plots[label] = (scatter, {'facecolors': scatter.get_facecolor(), 'sizes': scatter.get_sizes()})
 
-        scatter = ax.scatter(
-            grades,
-            grade_counts,
-            label=f"{value}",
-            color=value_colors[i % len(value_colors)],
-            edgecolors="black",
-            linewidths=1,
-            s=100
+        ax.set_xlabel("Letter Grades", fontsize=12)
+        ax.set_ylabel("Number of Each Grade (normalized)", fontsize=10)
+        ax.set_title("Frequency of Letter Grades", fontsize=14)
+        ax.grid(True)
+
+        root, canvas = create_figure_window(
+            fig, title="Grade Distribution", geometry="1000x700"
         )
-        ax.plot(
-            grades,
-            grade_counts,
-            color='black',
-            linewidth=3,
-            linestyle="-",
-        )
-        ax.plot(
-            grades,
-            grade_counts,
-            color=value_colors[i % len(value_colors)],
-            linewidth=1,
-            linestyle="-",
-        )
-        # Store the scatter plot and its original facecolors and sizes
-        scatter_plots[value] = (scatter, {'facecolors': scatter.get_facecolor(), 'sizes': scatter.get_sizes()})
 
-    ax.legend(fontsize='small', loc='best')
-    ax.set_xlabel("Letter Grades", fontsize=12)
-    ax.set_ylabel("Number of Each Grade (normalized)", fontsize=10)
-    ax.set_title("Frequency of Letter Grades", fontsize=14)
-    ax.grid(True)
+        # Adjusting the Treeview to have an additional "Category" column
+        tree = ttk.Treeview(root)
+        tree["columns"] = ["Category"] + grades
+        tree.column("#0", width=0, stretch=tk.NO)
+        tree.column("Category", anchor=tk.CENTER, width=120)
+        tree.heading("Category", text=column, anchor=tk.CENTER)
 
-    root, canvas = create_figure_window(
-        fig, title="Grade Distribution", geometry="1000x700"
-    )
+        for grade in grades:
+            tree.column(grade, anchor=tk.CENTER, width=80)
+            tree.heading(grade, text=grade, anchor=tk.CENTER)
 
-    # Adjusting the Treeview to have an additional "Category" column
-    tree = ttk.Treeview(root)
-    tree["columns"] = ["Category"] + grades
-    tree.column("#0", width=0, stretch=tk.NO)
-    tree.column("Category", anchor=tk.CENTER, width=120)
-    tree.heading("Category", text=column, anchor=tk.CENTER)
+        for _, row in df.iterrows():
+            tree.insert("", tk.END, values=(row[column], *[round(row[grade], 4) if grade in row and not pd.isna(row[grade]) else 0 for grade in grades]))
 
-    for grade in grades:
-        tree.column(grade, anchor=tk.CENTER, width=80)
-        tree.heading(grade, text=grade, anchor=tk.CENTER)
+        tree.grid(row=2, column=0, sticky="nsew")
 
-    for value in target_values:
-        value_df = df[df[f"{column}"] == value]
-        row = [round(value_df[grade].iloc[0], 4) if (not value_df.empty and grade in value_df.columns and not value_df[grade].empty) else 0 for grade in grades]
-        tree.insert("", tk.END, values=(value, *row))
+        def on_tree_selection_change(event):
+            selected_items = tree.selection()
+            if selected_items:
+                item = tree.item(selected_items[0])['values'][0]
+                highlight_plot_points(item)
 
-    tree.grid(row=2, column=0, sticky="nsew")
+        def clear_highlight():
+            for scatter, original in scatter_plots.values():
+                scatter.set_facecolors(original['facecolors'])
+                scatter.set_sizes(original['sizes'])
 
-    def on_tree_selection_change(event):
-        selected_items = tree.selection()
-        if selected_items:
-            item = tree.item(selected_items[0])["values"][0]
-            highlight_plot_points(item)
+        def highlight_plot_points(category):
+            clear_highlight()
+            scatter, original = scatter_plots.get(category, (None, None))
+            if scatter:
+                scatter.set_facecolors("red")
+                scatter.set_sizes([size * 2 for size in original['sizes']])
+            canvas.draw_idle()
 
-    def clear_highlight():
-        for scatter, original in scatter_plots.values():
-            scatter.set_facecolors(original['facecolors'])
-            scatter.set_sizes(original['sizes'])
+        tree.bind("<<TreeviewSelect>>", on_tree_selection_change)
 
-    def highlight_plot_points(category):
-        clear_highlight()
-        scatter, original = scatter_plots.get(category, (None, None))
-        if scatter:
-            scatter.set_facecolors("red")
-            scatter.set_sizes([size * 2 for size in original['sizes']])
-        canvas.draw_idle()
+        canvas.draw()
 
-    tree.bind("<<TreeviewSelect>>", on_tree_selection_change)
-
-    canvas.draw()
 
 def create_figure_window(fig, window=None, title="Figure Window", geometry="1000x700"):
     if window is None:

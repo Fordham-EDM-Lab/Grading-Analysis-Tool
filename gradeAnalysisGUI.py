@@ -12,6 +12,8 @@ import subprocess
 import json
 import dictionary as dic
 from gradeAnalysisFunc import return_filtered_dataframe
+# from ctypes import windll
+# windll.shcore.SetProcessDpiAwareness(1)
 
 
 def file_path(file):
@@ -410,19 +412,22 @@ class GradingAnalysisTool:
     # popup seemed like the best way
     # you can toggle the analysis checkboxes and csv checkbox on or off, but you at least need the thresholds on it
     def threshold_popup(
-        self,
-        window_length=700,
-        window_height=100,
-    ):
+            self,
+            window_length=700,
+            window_height=100,
+        ):
+            self.popup_box_threshold = tk.Toplevel(self.root)
+            self.popup_box_threshold.title("Threshold")
+            self.popup_box_threshold.geometry(f"{window_length}x{window_height}")
+            self.popup_box_threshold.transient(self.root)  # Keep the window attached to the root
+            self.popup_box_threshold.attributes("-topmost", True)  # Always on top
+            self.popup_box_threshold.grab_set()  # Ensure it stays in front and modal
 
-        self.popup_box_threshold = tk.Toplevel(self.root)
-        self.popup_box_threshold.title("Threshold")
-        self.popup_box_threshold.geometry(f"{window_length}x{window_height}")
-        self.logger.debug("Threshold popup window initialized")
+            self.logger.debug("Threshold popup window initialized")
 
-        self.popup_box_threshold.protocol("WM_DELETE_WINDOW", self.reset_gui)
+            self.popup_box_threshold.protocol("WM_DELETE_WINDOW", self.reset_gui)
 
-        return self.popup_box_threshold
+            return self.popup_box_threshold
 
     def confirm_threshold_choice(self, command=None):
         self.logger.info("Adding confirm button to threshold popup")
@@ -746,7 +751,7 @@ class GradingAnalysisTool:
 
         self.min_enrollment_threshold = self.min_sections_threshold = (
             self.max_enrollment_threshold
-        ) = self.max_sections_threshold = None
+        ) = self.max_sections_threshold = self.min_gpa_threshold = self.max_gpa_threshold = None
 
         try:
             self.setup_gui()
