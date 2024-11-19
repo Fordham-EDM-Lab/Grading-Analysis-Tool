@@ -17,19 +17,53 @@ from gradeAnalysisFunc import return_filtered_dataframe
 
 
 def file_path(file):
+    """
+    Returns the absolute path of a file located in the same directory as the script.
+
+    Args:
+        file (str): The name of the file.
+
+    Returns:
+        str: The absolute path of the file.
+    """
     return os.path.join(os.path.dirname(os.path.realpath(__file__)), file)
 
-def check_list_is_subset(target_list, check_list):
+def check_list_is_subset(target_list: list, check_list: list) -> bool:
+    """
+    Checks if all elements of the target_list are present in the check_list.
+
+    Args:
+        target_list (list): The list of elements to check.
+        check_list (list): The list in which to check for the presence of target_list elements.
+
+    Returns:
+        bool: True if all elements of target_list are in check_list, False otherwise.
+    """
     if set(target_list) == set(check_list):
         return True
     return all(item in check_list for item in target_list)
 
 def return_filtered_dataframe(df: gaf.pd.DataFrame, column: str, values: list) -> gaf.pd.DataFrame:
+    """
+    Filters a DataFrame based on a column and a list of values.
+
+    Args:
+        df (pd.DataFrame): The DataFrame to filter.
+        column (str): The column name to filter on.
+        values (list): The list of values to filter by.
+
+    Returns:
+        pd.DataFrame: A filtered DataFrame containing only the rows where the column's value is in the provided list.
+    """
     mask = df[column].isin(values)
     return df[mask]
 
 class GradingAnalysisTool:
     def __init__(self):
+        """
+        Initializes the GradingAnalysisTool class, setting up the main GUI window,
+        loading the initial data, and configuring various GUI elements and variables.
+        """
         self.logger = gaw.Logger(__name__)
 
         self.root = tk.Tk()
@@ -117,8 +151,10 @@ class GradingAnalysisTool:
         self.setup_gui()  # Run GUI setup
 
     def setup_gui(self):
-
-        #self.pre_processor_check()
+        """
+        Creates the main GUI window, retrieves the file paths from the .history.json file, adds the buttons
+        seen in the main command screen, sets up the Terminal redirect for stdout, and starts the mainloop.
+        """
 
         self.create_json_file()
 
@@ -131,7 +167,8 @@ class GradingAnalysisTool:
         if self.reset_gui_button is None:
             self.reset_gui_button = tk.Button(
                 self.root, text="Reset", command=self.reset_button
-            ).grid(row=6, column=2)
+            )
+            self.reset_gui_button.grid(row=6, column=2)
 
 
         self.run_command_button_toggle(state="normal")
@@ -160,6 +197,9 @@ class GradingAnalysisTool:
     ####################################################################################################
          ##Thresholds
     def enrollment_threshold_widget(self, state="disabled", where=None, row=None, column=None):
+        """
+        Sets up the enrollment threshold widget with two threshold widgets for minimum and maximum enrollment values.
+        """
         self.logger.info("Setting up enrollment threshold widget")
 
         if where is None:
@@ -188,6 +228,9 @@ class GradingAnalysisTool:
         self.logger.info("Enrollment threshold widget setup completed")
 
     def sections_threshold_widget(self, state="disabled", where=None, row=None, column=None):
+        """
+        Sets up the sections threshold widget with two threshold widgets for minimum and maximum sections values.
+        """
         self.logger.info("Setting up sections threshold widget")
 
         if where is None:
@@ -216,6 +259,10 @@ class GradingAnalysisTool:
         self.logger.info("Sections threshold widget setup completed")
 
     def class_size_threshold_widget(self, state="disabled", where=None, row=None, column=None):
+        """
+        Sets up the class size threshold widget with two threshold widgets for minimum and maximum class size
+        This is the same as the enrollment threshold widget, but with different text labels.
+        """
         self.logger.info("Setting up class size threshold widget")
 
         if where is None:
@@ -244,6 +291,10 @@ class GradingAnalysisTool:
         self.logger.info("Class size threshold widget setup completed")
 
     def gpa_threshold_widget(self, state="disabled", where=None, row=None, column=None):
+        """
+        Sets up the GPA threshold widget with two threshold widgets for minimum and maximum GPA values.
+        """
+        #not really used like that, gotta find a good use for it
         self.logger.info("Setting up class size threshold widget")
 
         if where is None:
@@ -272,6 +323,9 @@ class GradingAnalysisTool:
         self.logger.info("Class size threshold widget setup completed")
 
     def course_num_taken_threshold_widget(self, state="disabled", where=None, row=None, column=None):
+        """
+        Sets up the course num taken threshold widget with two threshold widgets for minimum and maximum course num taken values.
+        """
         self.logger.info("Setting up course num taken threshold widget")
 
         if where is None:
@@ -299,24 +353,12 @@ class GradingAnalysisTool:
         )
         self.logger.info("Course num taken threshold widget setup completed")
 
-    def thresholds_widget(self, state="disabled", where=None, which=None):
-        self.logger.info(f"Setting up thresholds widget for: {which}")
-        for threshold_widget in [
-            self.min_enrollment_threshold,
-            self.max_enrollment_threshold,
-            self.min_sections_threshold,
-            self.max_sections_threshold,
-        ]:
-            if threshold_widget is not None:
-                threshold_widget.destroy()
-
-        if where is None:
-            where = self.root
-            self.logger.debug("Default 'where' parameter used: self.root")
-
-        where.protocol("WM_DELETE_WINDOW", self.reset_gui)
-
     def csv_checkbox_widget(self, state="disabled", where=None, row=1, column=4):
+        """
+        Sets up the CSV checkbox widget with a single checkbox for creating a CSV file.
+        Creates a csv of the state of the dataframe based on the filters and chocies made by the user,
+        weather that be by thresholding or filtering via department, majors, courses, etc.
+        """
         self.logger.info("Starting setup of CSV checkbox widget")
 
         if where is None:
@@ -335,6 +377,9 @@ class GradingAnalysisTool:
         self.logger.info("CSV checkbox widget created successfully")
 
     def heatmap_checkbox_widget(self, state="disabled", where=None, row=1, column=4):
+        """
+        Used by the few commands that can create a heatmap, this checkbox is used to toggle the heatmap creation.
+        """
         self.logger.info("Starting setup of heatmap checkbox widget")
 
         if where is None:
@@ -355,6 +400,10 @@ class GradingAnalysisTool:
     def grade_distribution_checkbox(
         self, state="disabled", where=None, row=1, column=4
     ):
+        """
+        This checkbox is used to toggle the grade distribution creation. When checked, creates a
+        parallel plot of the normalized frequency of each letter grade seen in the data.
+        """
         self.logger.info("Starting setup of grade distribution checkbox widget")
 
         if where is None:
@@ -372,8 +421,6 @@ class GradingAnalysisTool:
         )
         self.logger.info("Grade distribution checkbox widget created successfully")
 
-    # general analysis checkboxes, pick which one you want by passing a list of booleans, like [True, False, True] to use the first and third checkbox
-    # places them top down
     def create_analysis_dropdown(
         self,
         where=None,
@@ -382,6 +429,10 @@ class GradingAnalysisTool:
         column=0,
         initial_message="Select Analysis",
     ):
+        """
+        creates the drop down for picking which analysis to run based on the dictionary.py file,
+        which defines dictionaries of option: bool pairs for each analysis type.
+        """
         self.logger.info("Starting setup of analysis dropdowns")
 
         if where is None:
@@ -395,27 +446,18 @@ class GradingAnalysisTool:
         )
         self.logger.info("Analysis dropdown created successfully")
 
-    # Creates the appropriate checkboxes and thresholds when used on the root gui itself
-    # right now only used for run all commands but can and should be used for future commands
-    # will add way to control row and column of each widget
-    def thresholds_on_root(self, which=None, row=0, column=0):
-        self.logger.info("Setting up thresholds on root")
-
-        self.thresholds_widget(
-            state="normal", where=self.root, which="sections_enrollment"
-        )
-        self.logger.debug("Thresholds widget setup completed")
-
-        self.logger.info("Thresholds setup on root completed")
-
     # Some commands need thresholds, but it wouldn't look right to have them on main
     # popup seemed like the best way
     # you can toggle the analysis checkboxes and csv checkbox on or off, but you at least need the thresholds on it
     def threshold_popup(
             self,
-            window_length=700,
-            window_height=100,
-        ):
+            window_length: int=700,
+            window_height: int=100,
+        ) -> tk.Toplevel:
+            """
+            Creates a popup window for the selected analysis command. This pop up handles filtering via choices, thresholding,
+            selecting analysis type, baisically everything that it takes to go to the next step and actually running the analysis and aggregation
+            """
             self.popup_box_threshold = tk.Toplevel(self.root)
             self.popup_box_threshold.title("Threshold")
             self.popup_box_threshold.geometry(f"{window_length}x{window_height}")
@@ -430,6 +472,9 @@ class GradingAnalysisTool:
             return self.popup_box_threshold
 
     def confirm_threshold_choice(self, command=None):
+        """
+        binds the command of the analysis you want to run to the Go button, usually placed on the threshold popup
+        """
         self.logger.info("Adding confirm button to threshold popup")
 
         if command:
@@ -441,6 +486,10 @@ class GradingAnalysisTool:
         self.logger.debug("Confirm button added to popup")
 
     def run_command_confirm_threshold(self, command):
+        """
+        Runs the selected command after confirming your options on the threshold popup,
+        now we really really for real run the command
+        """
         self.logger.info("Running command for confirming threshold")
 
         self.get_thresholds()
@@ -457,6 +506,9 @@ class GradingAnalysisTool:
 
     # foolproof function to minimize error brought by thresholds, they love to break
     def get_valid_integer(self, threshold=gaw.ThresholdWidget()):
+        """
+        Gets the integer value from the threshold widget, if it exists and is a number (int or float).
+        """
         if threshold is not None:
             try:
                 value = threshold.get_entry_value()
@@ -469,6 +521,9 @@ class GradingAnalysisTool:
             return None
 
     def get_thresholds(self):
+        """
+        Retrieves the threshold values from the widgets. yea probably not the best way to do check every threshold value but boohoo cry about it
+        """
         self.logger.info("Retrieving threshold values")
 
         if self.min_enrollment_threshold is not None:
@@ -483,14 +538,15 @@ class GradingAnalysisTool:
             self.min_gpa = self.get_valid_integer(self.min_gpa_threshold)
         if self.max_gpa_threshold is not None:
             self.max_gpa = self.get_valid_integer(self.max_gpa_threshold)
-        self.logger.debug(
-            f"Thresholds set - Min Enrollment: {self.min_enrollment}, Max Enrollment: {self.max_enrollment}, Min Sections: {self.min_sections}, Max Sections: {self.max_sections}, Min GPA: {self.min_gpa}, Max GPA: {self.max_gpa}"
-        )
+
 
     ##################################################################################
     ##History File .history.json
 
     def update_filestate(self, file, which):
+        """
+        Updates the file state for the files in the json, easily expandable
+        """
         self.logger.info(f"Updating file state for: {which}")
 
         history_path = file_path(".history.json")
@@ -499,10 +555,6 @@ class GradingAnalysisTool:
         attribute_map = {
             self.input_file_name: "input_file_name",
             self.output_directory: "output_directory",
-            self.course_table_file: "course_table_file",
-            self.department_file: "department_file",
-            self.instructor_file: "instructor_file",
-            self.major_file: "major_file",
         }
 
         if which in attribute_map:
@@ -519,10 +571,6 @@ class GradingAnalysisTool:
                 history = {
                     "inputfile": str(self.input_file_name),
                     "outputfile": str(self.output_directory),
-                    "coursetablefile": str(self.course_table_file),
-                    "departmentfile": str(self.department_file),
-                    "instructorfile": str(self.instructor_file),
-                    "majorfile": str(self.major_file),
                 }
                 json.dump(history, f)
                 self.logger.info(f"Updated .history.json with new file paths")
@@ -533,10 +581,12 @@ class GradingAnalysisTool:
     #################################################################################
     ##Commands
     def setup_commands(self):
+        """
+        Sets up the commands for the tool, these are the main runable commands
+        """
         self.logger.info("Setting up commands for GradingAnalysisTool")
 
         self.commands_directory = {
-            # "1 Major & Department Analysis": self.command_MajorDepartment,
             "Department Analysis": self.command_DeptAnalysis,
             "Instructor Analysis": self.command_InstAnalysis,
             "Major Analysis": self.command_MjrAnalysis,
@@ -551,6 +601,9 @@ class GradingAnalysisTool:
         self.logger.info("Command setup completed")
 
     def place_commands(self):
+        """
+        Places the commands from self.setup_commands in the listbox for the user to select from
+        """
         self.logger.info("Placing commands in the listbox")
 
         for command in self.commands_directory.keys():
@@ -564,10 +617,17 @@ class GradingAnalysisTool:
 
 
     def quit_program(self):
+        """
+        quits the program, i mean ive never used it but you gotta have a quit option
+        """
         self.logger.info("Quitting Program")
         exit()
 
     # no idea how this works or if it even works, need to visit again. works for now tho
+    # literally does not work this is stupid and not useful for a tool with such minimal buttons
+    # theres never even a reason to honestly resize the tool
+    # however the numbers in the for loops are not changeable right now because of the way the grid is set up
+    # terrible mistake on marios end, if we want to change the avaliale grid space we have to change the numbers EVRYWHERE grid is used
     def dynamic_resizing(self):
         self.logger.info("Setting up dynamic resizing for the GUI")
 
@@ -580,46 +640,17 @@ class GradingAnalysisTool:
         self.logger.info("Dynamic resizing setup completed")
 
     def reset_button(self):
+        """
+        binds the reset button to the reset_gui function
+        """
         self.terminal_output = None
         self.logger.info("Reset Button Clicked")
         self.reset_gui()
 
-    def pre_processor_check(self):
-        self.logger.info("Starting pre-processor check for required files")
-
-        for file_name in self.required_files:
-            full_path = file_path(file_name)
-            self.logger.debug(f"Checking for file: {full_path}")
-
-            if not os.path.isfile(full_path):
-                self.logger.error(
-                    f"Pre-processor check failed. Missing file: {file_name}"
-                )
-                messagebox.showerror(
-                    "Preprocessor Check Failed",
-                    f"Please run the generateTables file to use the GUI. Missing file: {file_name}",
-                )
-                self.ask_run_generateTables()
-                sys.exit()
-
-        self.logger.info("Pre-processor check completed successfully")
-        return
-
-    def ask_run_generateTables(self):
-        self.logger.info("Asking user to run generateTables.py")
-
-        if messagebox.askyesno(
-            "Preprocessor Check Failed",
-            "Please run the generateTables file to use the GUI. Would you like to run it now?",
-        ):
-            self.logger.debug("User selected to run generateTables.py")
-            subprocess.Popen([sys.executable, "generateTables.py"])
-            sys.exit()
-        else:
-            self.logger.debug("User selected not to run generateTables.py")
-            sys.exit()
-
     def run_command_button_toggle(self, state="normal"):
+        """
+        Toggles the run command button to be enabled or disabled, like when threshold popup is open. dont run multiple commands
+        """
         self.logger.info("Toggling run command button")
         tk.Button(
             self.root,
@@ -637,6 +668,9 @@ class GradingAnalysisTool:
 
     # creates the console output for the terminal
     def write_to_GUI(self):
+        """
+        Writes to the GUI terminal output. The Console class was taken from reddit a while ago, its great and I have no idea how it works
+        """
         self.logger.info("Writing to GUI terminal output")
 
         if self.terminal_output is None:
@@ -658,6 +692,9 @@ class GradingAnalysisTool:
     # Increment the line number counter for the next iteration.
 
     def hyperlink_filepath(self):
+        """
+        Processes the terminal output to identify file paths and create hyperlinks
+        """
         self.logger.info("Processing file paths for hyperlinks in terminal output")
         self.file_dict = {}
         content = self.terminal_output.get("1.0", tk.END)
@@ -717,6 +754,9 @@ class GradingAnalysisTool:
     # goal here is, after every command, the whole gui is reset as it is on startup. Ensures nothing breaks and
     # no weird errors occur by variables states being in weird state when running specific commands
     def reset_gui(self):
+        """
+        Resets the GUI to its initial state, clearing all widgets and variables.
+        """
         self.logger.info("Resetting the GUI")
 
         self.dept = self.major = self.faculty = self.min_enrollment = (
@@ -767,6 +807,9 @@ class GradingAnalysisTool:
     # exits the file, and if it doesn't exist (first startup), creates them with preset paths
 
     def create_json_file(self):
+        """
+        Creates a .history.json file with default file paths if it does not exist.
+        """
         self.logger.info("Creating or checking .history.json file")
 
         history_path = file_path(".history.json")
@@ -782,10 +825,6 @@ class GradingAnalysisTool:
             self.output_directory = str(
                 file_path("grading_analysis_output")
             )
-            self.course_table_file = str(file_path("courseTable.csv"))
-            self.department_file = str(file_path("deptTable.csv"))
-            self.instructor_file = str(file_path("instTable.csv"))
-            self.major_file = str(file_path("majorTable.csv"))
 
             with open(history_path, "w") as f:
                 history = {
@@ -1385,6 +1424,7 @@ class GradingAnalysisTool:
             departments = self.generic_instance.get_selected_options()
             df = return_filtered_dataframe(self.dataframe, 'Department', list(departments.keys()))
 
+
         self.logger.info("Running department analysis")
         gaf.DepartmentAnalysis(
             df,
@@ -1899,7 +1939,8 @@ class GradingAnalysisTool:
             user_directory=self.output_directory,
             min_enrollments=self.min_enrollment,
             max_enrollments=self.max_enrollment,
-            csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File")
+            csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"),
+            generate_grade_dist=self.grade_dist_checkbox.get_dict_of_checkbox().get("Generate Grade Distribution?")
         )
 
         self.hyperlink_filepath()

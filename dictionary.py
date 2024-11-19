@@ -39,7 +39,8 @@ department_analysis_options = {
     "Department vs Course #": False,
     "Department vs Section #": False,
     "Standard Deviation vs Enrollment": False,
-    "Enrollment vs GPA": False
+    "Enrollment vs GPA": False,
+    "GPA vs Standard Deviation": False
 }
 
 studentlevel_analysis_options = {

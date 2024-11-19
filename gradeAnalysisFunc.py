@@ -270,6 +270,22 @@ def DepartmentAnalysis(
         )
         plotter.plot()
 
+    if dic.department_analysis_options["GPA vs Standard Deviation"]:
+        plotter = gaw.tkMatplot(
+            title="GPA vs Standard Deviation",
+            window_width=800,
+            window_height=700,
+            x_label="GPA",
+            y_label="Standard Deviation",
+            plot_type="scatter",
+            colors=target_values,
+            color="teal",
+            x_plot="GPAW",
+            y_plot="stddev",
+            df=deptTable,
+        )
+        plotter.plot()
+
 
 
     if generate_grade_dist:
@@ -481,7 +497,7 @@ def MajorAnalysis(
             color=gaw.get_random_values(gaw.get_non_red_colors())[0],
             colors=target_values,
             x_plot="Major",
-            y_plot="GPA",
+            y_plot="GPAW",
             df=mjrTable,
             output_directory=user_directory,
         )
@@ -548,7 +564,7 @@ def MajorAnalysis(
             plot_type="scatter",
             color=gaw.get_random_values(gaw.get_non_red_colors())[0],
             colors=target_values,
-            x_plot="GPA",
+            x_plot="GPAW",
             y_plot="Enrollments",
             df=mjrTable,
             output_directory=user_directory
@@ -603,7 +619,7 @@ def pandas_df_agg(df, index=["Major"]):
         df.groupby(index)
         .agg(
             Sections=("UniqueCourseID", "nunique"),
-            Courses=("CourseTitle", "nunique"),
+            Courses=("CourseCode", "nunique"),
             GPA=("FinNumericGrade", "mean"),
             GPAW=('FinNumericGrade', lambda x: np.average(x, weights=df.loc[x.index, 'CredHrs']) if df.loc[x.index, 'CredHrs'].sum() != 0 else np.nan),
             stddev=("FinNumericGrade", "std"),
@@ -1157,6 +1173,9 @@ def student_analysis(
     df_agg = pandas_df_agg(df, "SID")
     df_agg = drop_courses_by_threshold(df_agg, "Courses", min_enrollments, max_enrollments)
     df_agg.drop(['Enrollments'], axis=1, inplace=True)
+    uni_sid = df_agg['SID'].unique()
+    sid_col = {sid: '#2c1775' for sid in uni_sid}
+    df_agg['color'] = df_agg['SID'].map(sid_col)
 
     labels = []
     for i in range(0, 40):
@@ -1170,6 +1189,9 @@ def student_analysis(
         countvsgpaDF = df_agg.drop_duplicates(subset=['GPAGroups'])
         countvsgpaDF.sort_values(by='GPAGroups', inplace=True)
         countvsgpaDF['GPAGroups'] = countvsgpaDF['GPAGroups'].astype(str)
+        unique_groups = countvsgpaDF['GPAGroups'].unique()
+        color_map = {group: '#2c1775' for group in unique_groups}
+        countvsgpaDF['color'] = countvsgpaDF['GPAGroups'].map(color_map)
         plotter = gaw.tkMatplot(
             title="GPA groups vs Student Count",
             window_width=800,

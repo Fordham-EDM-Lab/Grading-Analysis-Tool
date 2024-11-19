@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
+from tkinter import simpledialog
 from functools import partial
 import mplcursors
 import sys
@@ -76,6 +77,7 @@ def get_non_red_colors():
 
 
     non_red_colors = [i[0] for i in non_red_colors]
+    non_red_colors.remove('rebeccapurple')
     return non_red_colors
 
 
@@ -1331,6 +1333,7 @@ class tkDropdown():
         self.scrolltextbox_height = scrolltextbox_height
         self.current_key = None
         self.selected_color = get_random_values(get_non_red_colors())[0]
+        self.color_labels = {}
 
 
 
@@ -1347,9 +1350,33 @@ class tkDropdown():
 
     def choose_color(self):
         selected_color = colorchooser.askcolor(title="Choose color")[1]
+        class_categories = [
+            "Sciences",
+            "Mathematics",
+            "Humanities",
+            "Languages",
+            "Social Sciences",
+            "Creative Arts",
+            "Performing Arts",
+            "Business",
+            "Technology",
+            "Health Sciences",
+            "Physical Education",
+            "Engineering",
+            "Environmental Studies",
+            "Law",
+            "Education",
+            "Computer Science",
+            "Media Studies",
+            "Philosophy",
+            "Religious Studies",
+            "Ethnic and Cultural Studies"
+        ]
 
         if selected_color:
             self.color_chooser.config(bg=selected_color)
+            label_value = simpledialog.askstring(title='Label Picker', prompt='What is this label?', initialvalue=random.choice(class_categories))
+            self.color_labels[selected_color] = label_value
             self.selected_color = selected_color
 
 
@@ -1427,6 +1454,9 @@ class tkDropdown():
     def get_selected_options(self):
         return self.selected_options
 
+    def get_option_labels(self):
+        return self.color_labels
+
     def isEmpty(self):
         self.logger.info("Checking if selected options is empty")
         return not self.selected_options
@@ -1449,27 +1479,49 @@ class tkDropdown():
     def export_to_csv(self):
         self.logger.info("Exporting selected options to text file")
         if self.allow_multiple_entries:
-            with open(self.path, "w", newline="") as f:
-                writer = csv.writer(f)
-                for key, value in self.selected_options.items():
-                    writer.writerow([key, value])
+            csv_df = pd.DataFrame(list(self.selected_options.items()), columns=['Type', 'Color'])
+            colors = list(self.color_labels.keys())
+            labels = list(self.color_labels.values())
+            csv_df['Label'] = pd.Series(labels)
+            csv_df['LabelColor'] = pd.Series(colors)
+            csv_df.to_csv(self.path, index=False)
             print("\n\nFile Created:", f" {self.path}\n\n")
         else:
             with open(self.path, "w") as file:
                 file.write(self.dropdown.get())
                 print("\n\nFile Created:", f" {self.path}\n\n")
 
+
     def import_from_csv(self):
         if self.allow_multiple_entries:
-            self.logger.info("Importing selected options from csv file")
+            self.logger.info("Importing selected options from CSV file")
+
+            self.path = tk.filedialog.askopenfilename()
+
+            # Temporary dictionaries to store imported data
+            selected_options = {}
+            color_labels = {}
+
+            with open(self.path, "r") as file:
+                reader = csv.DictReader(file)
+
+                for row in reader:
+                    if row.get('Type') and row.get('Color'):
+                        selected_options[row['Type']] = row['Color']
+                        self.selected_options_label.add_text(f"{row['Type']},\n")
+
+                    if row.get('Label') and row.get('LabelColor'):
+                        color_labels[row['LabelColor']] = row['Label']
+
+            # Update instance dictionaries after reading
+            self.selected_options.update(selected_options)
+            self.color_labels.update(color_labels)
+
+            print("\n\nImported Data:\n")
+        else:
             self.path = tk.filedialog.askopenfilename()
             with open(self.path, "r") as file:
-                reader = csv.reader(file)
-                for row in reader:
-                    self.selected_options[row[0]] = row[1]
-                    self.selected_options_label.add_text(f"{row[0]},\n")
-        else:
-            return
+                self.selected_options[self.dropdown.get()] = file.read().strip()
 
 class tkScrolledtextBox(tkst.ScrolledText):
     def __init__(self, master, row, column, width, height):
