@@ -33,8 +33,9 @@ from functools import partial
 from tkinter import colorchooser
 import dictionary
 import csv
-
 import gradeAnalysisFunc
+from matplotlib.lines import Line2D
+
 
 
 def popup(self, title="", popup_text=""):
@@ -476,6 +477,7 @@ class tkMatplot:
         plot_type=None,
         color=None,
         colors=None,
+        legend=None,
         x_plot=None,
         y_plot=None,
         data_type=None,
@@ -507,6 +509,7 @@ class tkMatplot:
         self.colors = colors
         self.x_plot = x_plot
         self.y_plot = y_plot
+        self.legend = legend
         self.df = df
         self.original_index = self.df.index.copy()
         self.title = title
@@ -672,6 +675,13 @@ class tkMatplot:
                     col_value = df[col].iloc[index]
                     annotation_text.append(f"{col}: {col_value}")
             sel.annotation.set_text("\n".join(annotation_text))
+
+        legend_elements = [
+            Line2D([0], [0], color=color, lw=4, label=label)
+            for color, label in self.legend.items()
+        ]
+
+        self.ax.legend(handles=legend_elements, title="Legend")
 
 
 
@@ -1391,7 +1401,7 @@ class tkDropdown():
 
         if self.allow_multiple_entries:
             self.color_chooser = tk.Button(self.master, text="", command=self.choose_color, width=1, height=1, bg=self.selected_color)
-            self.color_chooser.grid(row=self.row, column=self.column, sticky=tk.E)
+            self.color_chooser.grid(row=self.row, column=self.column+1, sticky=tk.E)
 
 
         if self.command:

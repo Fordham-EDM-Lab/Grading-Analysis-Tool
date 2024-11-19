@@ -1389,7 +1389,7 @@ class GradingAnalysisTool:
     def command_DeptAnalysis(self):
         self.logger.info("Executing Department Analysis command")
         self.run_command_button_toggle(state="disabled")
-        popup = self.threshold_popup(600, 125)
+        popup = self.threshold_popup(700, 125)
         self.create_analysis_dropdown(popup, dic.department_analysis_options, row=0, column=4)
         self.enrollment_threshold_widget('normal', popup, row=0, column=0)
         self.sections_threshold_widget('normal', popup, row=0, column=2)
@@ -1435,6 +1435,7 @@ class GradingAnalysisTool:
             min_sections=self.min_sections,
             max_sections=self.max_sections,
             csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"),
+            legend=self.generic_instance.get_option_labels(),
             generate_grade_dist=self.grade_dist_checkbox.get_dict_of_checkbox().get(
                 "Generate Grade Distribution?"
             ),
@@ -1445,7 +1446,7 @@ class GradingAnalysisTool:
     def command_InstAnalysis(self):
         self.logger.info("Executing Instructor Analysis command")
         self.run_command_button_toggle(state="disabled")
-        popup = self.threshold_popup(600, 125)
+        popup = self.threshold_popup(700, 125)
         self.create_analysis_dropdown(popup, dic.instructor_analysis_options, row=0, column=4)
         self.enrollment_threshold_widget('normal', popup, row=0, column=0)
         self.sections_threshold_widget('normal', popup, row=0, column=2)
@@ -1551,6 +1552,7 @@ class GradingAnalysisTool:
             max_enrollments=self.max_enrollment,
             min_sections=self.min_sections,
             max_sections=self.max_sections,
+            legend=self.generic_instance.get_option_labels(),
             csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"),
             generate_grade_dist=self.grade_dist_checkbox.get_dict_of_checkbox().get(
                 "Generate Grade Distribution?"
@@ -1563,7 +1565,7 @@ class GradingAnalysisTool:
     def command_MjrAnalysis(self):
         self.run_command_button_toggle(state="disabled")
 
-        popup = self.threshold_popup(600, 125)
+        popup = self.threshold_popup(700, 125)
         self.create_analysis_dropdown(popup, dic.major_analysis_options, row=0, column=4)
         self.enrollment_threshold_widget('normal', popup, row=0, column=0)
         self.sections_threshold_widget('normal', popup, row=0, column=2)
@@ -1603,6 +1605,7 @@ class GradingAnalysisTool:
             self.max_sections,
             target_values=majors,
             csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"),
+            legend=self.generic_instance.get_option_labels(),
             generate_grade_dist=self.grade_dist_checkbox.get_dict_of_checkbox().get(
                 "Generate Grade Distribution?"
             ),
@@ -1709,6 +1712,7 @@ class GradingAnalysisTool:
             min_gpa=self.min_gpa,
             max_gpa=self.max_gpa,
             csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"),
+            legend=self.generic_instance.get_option_labels(),
             generate_grade_dist=self.grade_dist_checkbox.get_dict_of_checkbox().get(
                 "Generate Grade Distribution?"
             ),
@@ -1718,7 +1722,7 @@ class GradingAnalysisTool:
 
     def command_CrsAnalysis(self):
         self.run_command_button_toggle(state="disabled")
-        popup = self.threshold_popup(600, 125)
+        popup = self.threshold_popup(700, 125)
         self.create_analysis_dropdown(popup, dic.course_analysis_options, row=0, column=4)
         self.enrollment_threshold_widget('normal', popup, row=0, column=0)
         self.sections_threshold_widget('normal', popup, row=0, column=2)
@@ -1768,6 +1772,7 @@ class GradingAnalysisTool:
             self.min_sections,
             self.max_sections,
             csv=self.csv_checkbox.get_dict_of_checkbox().get("CSV File"),
+            legend=self.generic_instance.get_option_labels(),
             generate_grade_dist=self.grade_dist_checkbox.get_dict_of_checkbox().get(
                 "Generate Grade Distribution?"
             ),

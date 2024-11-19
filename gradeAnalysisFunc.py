@@ -145,6 +145,7 @@ def DepartmentAnalysis(
     min_enrollments=100,
     max_enrollments=None,
     min_sections=None,
+    legend=None,
     max_sections=None,
     csv=False,
     generate_grade_dist=False,
@@ -179,6 +180,7 @@ def DepartmentAnalysis(
             y_label="GPA",
             plot_type="bar",
             colors=target_values,
+            legend=legend,
             color='black',
             x_plot="Department",
             y_plot="GPAW",
@@ -196,6 +198,7 @@ def DepartmentAnalysis(
             y_label="Enrollment",
             plot_type="scatter",
             colors=target_values,
+            legend=legend,
             color="teal",
             x_plot="Department",
             y_plot="Enrollments",
@@ -213,6 +216,7 @@ def DepartmentAnalysis(
             y_label="Sections",
             plot_type="scatter",
             colors=target_values,
+            legend=legend,
             color="teal",
             x_plot="Department",
             y_plot="Sections",
@@ -231,6 +235,7 @@ def DepartmentAnalysis(
             plot_type="bar",
             colors=target_values,
             color="teal",
+            legend=legend,
             x_plot="Department",
             y_plot="Courses",
             df=deptTable,
@@ -247,6 +252,7 @@ def DepartmentAnalysis(
             y_label="Enrollment",
             plot_type="scatter",
             colors=target_values,
+            legend=legend,
             color="teal",
             x_plot="stddev",
             y_plot="Enrollments",
@@ -263,6 +269,7 @@ def DepartmentAnalysis(
             y_label="GPA",
             plot_type="scatter",
             colors=target_values,
+            legend=legend,
             color="teal",
             x_plot="Enrollments",
             y_plot="GPAW",
@@ -279,6 +286,7 @@ def DepartmentAnalysis(
             y_label="Standard Deviation",
             plot_type="scatter",
             colors=target_values,
+            legend=legend,
             color="teal",
             x_plot="GPAW",
             y_plot="stddev",
@@ -316,6 +324,7 @@ def InstructorAnalysis(
     target_values=None,
     min_sections=None,
     max_sections=None,
+    legend=None,
     csv=False,
     generate_grade_dist=False,
 ):
@@ -360,6 +369,7 @@ def InstructorAnalysis(
             plot_type="bar",
             color=gaw.get_random_values(gaw.get_non_red_colors())[0],
             colors=target_values,
+            legend=legend,
             x_plot="FacultyID",
             y_plot="GPA",
             df=instTable,
@@ -376,6 +386,7 @@ def InstructorAnalysis(
             y_label="Enrollment",
             plot_type="scatter",
             color=gaw.get_random_values(gaw.get_non_red_colors())[0],
+            legend=legend,
             colors=target_values,
             x_plot="FacultyID",
             y_plot="Enrollments",
@@ -393,6 +404,7 @@ def InstructorAnalysis(
             y_label="Sections",
             plot_type="scatter",
             color=gaw.get_random_values(gaw.get_non_red_colors())[0],
+            legend=legend,
             x_plot="FacultyID",
             colors=target_values,
             y_plot="Sections",
@@ -410,6 +422,7 @@ def InstructorAnalysis(
             y_label="Courses",
             plot_type="bar",
             color=gaw.get_random_values(gaw.get_non_red_colors())[0],
+            legend=legend,
             colors=target_values,
             x_plot="FacultyID",
             y_plot="Courses",
@@ -427,6 +440,7 @@ def InstructorAnalysis(
             y_label="Standard Deviation",
             plot_type="bar",
             color=gaw.get_random_values(gaw.get_non_red_colors())[0],
+            legend=legend,
             colors=target_values,
             x_plot="FacultyID",
             y_plot="stddev",
@@ -445,6 +459,7 @@ def InstructorAnalysis(
             plot_type="scatter",
             colors=target_values,
             color=gaw.get_random_values(gaw.get_non_red_colors())[0],
+            legend=legend,
             x_plot="GPA",
             y_plot="Enrollments",
             df=instTable,
@@ -464,6 +479,7 @@ def MajorAnalysis(
     csv=False,
     target_values=None,
     generate_grade_dist=False,
+    legend=None,
 ):
 
     col = find_column_by_value(df, list(target_values.keys())[1])
@@ -495,6 +511,7 @@ def MajorAnalysis(
             y_label="GPA",
             plot_type="bar",
             color=gaw.get_random_values(gaw.get_non_red_colors())[0],
+            legend=legend,
             colors=target_values,
             x_plot="Major",
             y_plot="GPAW",
@@ -511,6 +528,7 @@ def MajorAnalysis(
             x_label="Major",
             y_label="Enrollment",
             plot_type="scatter",
+            legend=legend,
             color="teal",
             colors=target_values,
             x_plot="Major",
@@ -529,6 +547,7 @@ def MajorAnalysis(
             y_label="Sections",
             plot_type="scatter",
             color=gaw.get_random_values(gaw.get_non_red_colors())[0],
+            legend=legend,
             colors=target_values,
             x_plot="Major",
             y_plot="Sections",
@@ -546,6 +565,7 @@ def MajorAnalysis(
             y_label="Courses",
             plot_type="bar",
             color=gaw.get_random_values(gaw.get_non_red_colors())[0],
+            legend=legend,
             colors=target_values,
             x_plot="Major",
             y_plot="Courses",
@@ -563,6 +583,7 @@ def MajorAnalysis(
             y_label="Enrollment",
             plot_type="scatter",
             color=gaw.get_random_values(gaw.get_non_red_colors())[0],
+            legend=legend,
             colors=target_values,
             x_plot="GPAW",
             y_plot="Enrollments",
@@ -580,6 +601,7 @@ def MajorAnalysis(
             y_label="Enrollment",
             plot_type="scatter",
             color=gaw.get_random_values(gaw.get_non_red_colors())[0],
+            legend=legend,
             colors=target_values,
             x_plot="stddev",
             y_plot="Enrollments",
@@ -642,14 +664,20 @@ def pandas_df_agg(df, index=["Major"]):
     delta_gpa_ret_df[index] = df_final[index]
 
     if not any(item in ['UniqueCourseID', 'SID'] for item in index):
-        delta_gpa = df.groupby(index + ['Semester']).agg(GPA=("FinNumericGrade", "mean"), GPAW=('FinNumericGrade', lambda x: np.average(x, weights=df.loc[x.index, 'CredHrs']) if df.loc[x.index, 'CredHrs'].sum() != 0 else np.nan))
+        delta_gpa = df.groupby(index + ['Semester']).agg(
+            GPA=("FinNumericGrade", "mean"),
+            GPAW=('FinNumericGrade', lambda x: np.average(
+                x, weights=df.loc[x.index, 'CredHrs']
+            ) if df.loc[x.index, 'CredHrs'].sum() != 0 else np.nan)
+        )
         temp_copy = delta_gpa.copy()
         delta_gpa['DELTA(GPA)'] = temp_copy.groupby(index)['GPA'].diff().fillna(0)
         delta_gpa['DELTA(GPAW)'] = temp_copy.groupby(index)['GPAW'].diff().fillna(0)
-        delta_gpa_ret_df['avg_gpa_change'] = delta_gpa.groupby(index)['DELTA(GPA)'].mean().values
-        delta_gpa_ret_df['avg_gpaw_change'] = delta_gpa.groupby(index)['DELTA(GPAW)'].mean().values
+        delta_gpa_ret_df = delta_gpa.groupby(index).agg(
+            avg_gpa_change=('DELTA(GPA)', 'mean'),
+            avg_gpaw_change=('DELTA(GPAW)', 'mean')
+        ).reset_index()
         df_final = pd.merge(df_final, delta_gpa_ret_df, on=index)
-
 
     float_cols = df_final.select_dtypes(include="float").columns
 
@@ -667,6 +695,7 @@ def section_analysis(
     max_enrollments=None,
     min_gpa=None,
     max_gpa=None,
+    legend=None,
     generate_grade_dist=False,
 ):
 
@@ -719,6 +748,7 @@ def section_analysis(
             y_label="GPA",
             plot_type="line",
             color=gaw.get_random_values(gaw.get_non_red_colors())[0],
+            legend=legend,
             colors=target_courses,
             x_plot="UniqueCourseID",
             y_plot="GPA",
@@ -736,6 +766,7 @@ def section_analysis(
             y_label="Enrollment",
             plot_type="scatter",
             color=gaw.get_random_values(gaw.get_non_red_colors())[0],
+            legend=legend,
             colors=target_courses,
             x_plot="UniqueCourseID",
             y_plot="Enrollments",
@@ -753,6 +784,7 @@ def section_analysis(
             y_label="Class Size",
             plot_type="scatter",
             color=gaw.get_random_values(gaw.get_non_red_colors())[0],
+            legend=legend,
             colors=target_courses,
             x_plot="GPA",
             y_plot="Enrollments",
@@ -770,6 +802,7 @@ def section_analysis(
             y_label="Standard Deviation",
             plot_type="bar",
             color=gaw.get_random_values(gaw.get_non_red_colors())[0],
+            legend=legend,
             colors=target_courses,
             x_plot="UniqueCourseID",
             y_plot="stddev",
@@ -787,6 +820,7 @@ def section_analysis(
             y_label="Standard Deviation",
             plot_type="scatter",
             color=gaw.get_random_values(gaw.get_non_red_colors())[0],
+            legend=legend,
             colors=target_courses,
             x_plot="Enrollments",
             y_plot="stddev",
@@ -819,6 +853,7 @@ def CourseAnalysis(
     max_sections=None,
     csv=False,
     generate_grade_dist=False,
+    legend=None,
 ):
 
     col = find_column_by_value(df, list(target_values.keys())[1])
@@ -855,6 +890,7 @@ def CourseAnalysis(
             y_label="GPA",
             plot_type="bar",
             color=gaw.get_random_values(gaw.get_non_red_colors())[0],
+            legend=legend,
             colors=target_values,
             x_plot="CourseCode",
             y_plot="GPA",
@@ -872,6 +908,7 @@ def CourseAnalysis(
             y_label="Enrollments",
             plot_type="scatter",
             color=gaw.get_random_values(gaw.get_non_red_colors())[0],
+            legend=legend,
             colors=target_values,
             x_plot="CourseCode",
             y_plot="Enrollments",
@@ -889,6 +926,7 @@ def CourseAnalysis(
             y_label="Sections",
             plot_type="scatter",
             color=gaw.get_random_values(gaw.get_non_red_colors())[0],
+            legend=legend,
             colors=target_values,
             x_plot="CourseCode",
             y_plot="Sections",
@@ -906,6 +944,7 @@ def CourseAnalysis(
             y_label="GPA",
             plot_type="scatter",
             color=gaw.get_random_values(gaw.get_non_red_colors())[0],
+            legend=legend,
             colors=target_values,
             x_plot="Enrollments",
             y_plot="GPA",
@@ -923,6 +962,7 @@ def CourseAnalysis(
             y_label="Standard Deviation",
             plot_type="bar",
             color=gaw.get_random_values(gaw.get_non_red_colors())[0],
+            legend=legend,
             colors=target_values,
             x_plot="CourseCode",
             y_plot="stddev",
@@ -940,6 +980,7 @@ def CourseAnalysis(
             y_label="Standard Deviation",
             plot_type="scatter",
             color=gaw.get_random_values(gaw.get_non_red_colors())[0],
+            legend=legend,
             colors=target_values,
             x_plot="GPAW",
             y_plot="stddev",
@@ -985,6 +1026,15 @@ def student_level_analysis(
               'Graduate Students': 'yellow',
               'Unclassified': 'grey'}
 
+    legend = {
+            '#000000': 'Freshman',
+            '#008000': 'Sophomores',
+            '#800080': 'Juniors',
+            '#ffa500': 'Seniors',
+            '#ffff00': 'Graduate Students',
+            '#808080': 'Unclassified'
+    }
+
     df_agg = pandas_df_agg(df, "StudentLevel")
 
     if csv:
@@ -1004,6 +1054,7 @@ def student_level_analysis(
             plot_type="bar",
             color=gaw.get_random_values(gaw.get_non_red_colors())[0],
             colors=colors,
+            legend=legend,
             x_plot="StudentLevel",
             y_plot="Enrollments",
             df=df_agg,
@@ -1021,6 +1072,7 @@ def student_level_analysis(
             plot_type="bar",
             color=gaw.get_random_values(gaw.get_non_red_colors())[0],
             colors=colors,
+            legend=legend,
             x_plot="StudentLevel",
             y_plot="GPA",
             df=df_agg,
@@ -1038,6 +1090,7 @@ def student_level_analysis(
             plot_type="bar",
             color=gaw.get_random_values(gaw.get_non_red_colors())[0],
             colors=colors,
+            legend=legend,
             x_plot="StudentLevel",
             y_plot="Courses",
             df=df_agg,
@@ -1091,6 +1144,15 @@ def course_level_analysis(
               '3000': 'orange',
               '4000': 'yellow',
               }
+
+    legend = {
+    '#000000': 'Beginner',
+    '#008000': '1000',
+    '#800080': '2000',
+    '#ffa500': '3000',
+    '#ffff00': '4000'
+    }
+
     df_agg = pandas_df_agg(df, "CourseLevel")
 
     if csv:
@@ -1111,6 +1173,7 @@ def course_level_analysis(
             color=gaw.get_random_values(gaw.get_non_red_colors())[0],
             colors=colors,
             x_plot="CourseLevel",
+            legend=legend,
             y_plot="Courses",
             df=df_agg,
             output_directory=user_directory,
@@ -1127,6 +1190,7 @@ def course_level_analysis(
             plot_type="bar",
             color=gaw.get_random_values(gaw.get_non_red_colors())[0],
             colors=colors,
+            legend=legend,
             x_plot="CourseLevel",
             y_plot="GPA",
             df=df_agg,
@@ -1145,6 +1209,7 @@ def course_level_analysis(
             plot_type="bar",
             color=gaw.get_random_values(gaw.get_non_red_colors())[0],
             colors=colors,
+            legend=legend,
             x_plot="CourseLevel",
             y_plot="Enrollments",
             df=df_agg,
@@ -1191,6 +1256,7 @@ def student_analysis(
         countvsgpaDF['GPAGroups'] = countvsgpaDF['GPAGroups'].astype(str)
         unique_groups = countvsgpaDF['GPAGroups'].unique()
         color_map = {group: '#2c1775' for group in unique_groups}
+        legend = {'#2c1775': 'GPAGroup'}
         countvsgpaDF['color'] = countvsgpaDF['GPAGroups'].map(color_map)
         plotter = gaw.tkMatplot(
             title="GPA groups vs Student Count",
@@ -1200,6 +1266,7 @@ def student_analysis(
             y_label="Student Count",
             plot_type="bar",
             color=gaw.get_random_values(gaw.get_non_red_colors())[0],
+            legend=legend,
             x_plot="GPAGroups",
             y_plot="GPAGroupCounts",
             df=countvsgpaDF,
@@ -1208,6 +1275,7 @@ def student_analysis(
         plotter.plot()
 
     if dic.student_analysis_options["Student Course # Taken vs Student Average GPA"]:
+        legend = {'#2c1775': 'SID'}
         plotter = gaw.tkMatplot(
             title="Student Course # Taken vs Student Average GPA",
             window_width=800,
@@ -1217,6 +1285,7 @@ def student_analysis(
             plot_type="scatter",
             color=gaw.get_random_values(gaw.get_non_red_colors())[0],
             x_plot="GPA",
+            legend=legend,
             y_plot="Courses",
             df=df_agg,
             output_directory=user_directory
