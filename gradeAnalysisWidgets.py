@@ -1527,7 +1527,7 @@ class tkDropdown():
             self.selected_options.update(selected_options)
             self.color_labels.update(color_labels)
 
-            print("\n\nImported Data:\n")
+            print(f"\n\nImported Data from {self.path}\n")
         else:
             self.path = tk.filedialog.askopenfilename()
             with open(self.path, "r") as file:

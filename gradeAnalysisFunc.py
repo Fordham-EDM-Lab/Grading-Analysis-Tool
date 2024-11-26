@@ -629,13 +629,14 @@ def pandas_df_agg(df, index=["Major"]):
        kurtosis: Kurtosis of GPA for a given index
        skewness: Skewness of GPA for a given index
        """
+    df = df[~df['FinLetterGrade'].isin(['P'])] if 'P' in df['FinLetterGrade'].values else df
+
     if isinstance(index, str):
         index = [index]
 
     df_enrollments = (
         df.groupby(index)["SID"].nunique().reset_index(name="Enrollments")
     )
-
 
     df_agg = (
         df.groupby(index)
