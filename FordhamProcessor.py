@@ -193,7 +193,7 @@ def dataCleanup(df):
     df['CourseTitle'] = df['CourseTitle'].apply(
         lambda x: 'MONEY AND BANKING' if x == 'MONEY & BANKING' else x)
     df['CourseTitle'] = df['CourseTitle'].apply(
-        lambda x: 'MULTIVARIATE CALCULUS II' if x == 'MULTIVARIABLE CALCULUS II' else x)
+        lambda x: 'MULTIVARIABLE CALCULUS II' if x == 'MULTIVARIATE CALCULUS II' else x)
     df['CourseTitle'] = df['CourseTitle'].apply(
         lambda x: 'MUSIC HISTORY INTRODUCTION' if x == 'MUSIC HISTORY INTRO' else x)
     df['CourseTitle'] = df['CourseTitle'].apply(
@@ -666,6 +666,10 @@ def dataCleanup(df):
         lambda x: "Environmental Law" if x in ["Environmental Policy"] else x)
     df['Department'] = df['Department'].apply(
         lambda x: "Humanitarian Studies" if x in ["Humanitarian Affairs"] else x)
+
+
+    df['StudentLevel'] = df['StudentLevel'].apply(
+        lambda x: "Freshman" if x in ["Continuing Freshman", "First-Time Freshman"] else x)
 
 
     df['FinLetterGrade'] = df['FinLetterGrade'].apply(
