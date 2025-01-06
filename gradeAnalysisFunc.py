@@ -279,7 +279,7 @@ def DepartmentAnalysis(
 
     if dic.department_analysis_options["GPA vs Standard Deviation"]:
         plotter = gaw.tkMatplot(
-            title="GPA vs Standard Deviation",
+            title="Department GPA vs Department Standard Deviation",
             window_width=800,
             window_height=700,
             x_label="GPA",
@@ -465,8 +465,25 @@ def InstructorAnalysis(
             df=instTable,
         )
         plotter.plot()
+    
+    if dic.instructor_analysis_options["GPA vs Standard Deviation"]:
+        plotter = gaw.tkMatplot(
+            title="Instructor's GPA vs Instructor's GPA Standard Deviation",
+            window_width=800,
+            window_height=700,
+            x_label="GPA",
+            y_label="Standard Deviation",
+            plot_type="scatter",
+            color=gaw.get_random_values(gaw.get_non_red_colors())[0],
+            legend=legend,
+            colors=target_values,
+            x_plot="GPAW",
+            y_plot="stddev",
+            df=instTable,
+        )
+        plotter.plot()
 
-        dic.reset_all_false()
+    dic.reset_all_false()
 
 
 def MajorAnalysis(
@@ -974,7 +991,7 @@ def CourseAnalysis(
 
     elif dic.course_analysis_options["GPA vs Standard Deviation"]:
         plotter = gaw.tkMatplot(
-            title="Average GPA vs GPA Standard Deviation",
+            title="Course GPA vs GPA Standard Deviation",
             window_width=800,
             window_height=700,
             x_label="GPA",

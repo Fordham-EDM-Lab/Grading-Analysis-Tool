@@ -35,7 +35,8 @@ import dictionary
 import csv
 import gradeAnalysisFunc
 from matplotlib.lines import Line2D
-
+import webcolors
+import copy
 
 
 def popup(self, title="", popup_text=""):
@@ -55,6 +56,9 @@ def popup(self, title="", popup_text=""):
     self.logger.debug("Close button created for popup")
 
     self.logger.info("Popup created and displayed successfully")
+
+def name_to_hex(color_name):
+    return webcolors.name_to_hex(color_name)
 
 
 ##For matplotlib uses
@@ -483,6 +487,7 @@ class tkMatplot:
         data_type=None,
         output_directory=None,
     ):
+        
         self.logger = Logger(__name__)
         self.logger.info("Initializing tkMatplot class")
         self.root = tk.Tk()
@@ -506,7 +511,6 @@ class tkMatplot:
         self.y_label = y_label
         self.plot_type = plot_type
         self.color = color
-        self.colors = colors
         self.x_plot = x_plot
         self.y_plot = y_plot
         self.legend = legend
@@ -536,22 +540,23 @@ class tkMatplot:
         self.numerical_bin_check = False
         self.bin_selected_groups = None
         self.reset_tuple = (
-            title,
-            window_width,
-            window_height,
-            df,
-            x_label,
-            y_label,
-            plot_type,
-            colors,
-            color,
-            x_plot,
-            y_plot,
-            data_type,
-            self.scale,
-            self.plot_style,
-            self.sort_order,
-            self.normalize_option,
+            copy.deepcopy(title),           
+            copy.deepcopy(window_width),    
+            copy.deepcopy(window_height),   
+            copy.deepcopy(df),              
+            copy.deepcopy(x_label),         
+            copy.deepcopy(y_label),         
+            copy.deepcopy(plot_type),       
+            copy.deepcopy(color),         
+            copy.deepcopy(colors),          
+            copy.deepcopy(x_plot),          
+            copy.deepcopy(y_plot),          
+            copy.deepcopy(data_type),       
+            copy.deepcopy(self.scale),      
+            copy.deepcopy(self.plot_style), 
+            copy.deepcopy(self.sort_order), 
+            copy.deepcopy(self.normalize_option),
+            copy.deepcopy(self.legend),
         )
         self.help_button = None
         self.logger.info("tkMatplot class initialized")
@@ -676,6 +681,7 @@ class tkMatplot:
                     annotation_text.append(f"{col}: {col_value}")
             sel.annotation.set_text("\n".join(annotation_text))
 
+
         legend_elements = [
             Line2D([0], [0], color=color, lw=4, label=label)
             for color, label in self.legend.items()
@@ -684,9 +690,8 @@ class tkMatplot:
         self.ax.legend(handles=legend_elements, title="Legend")
 
 
-
         self.ax.set_xlabel(self.x_label, fontsize=12)
-        self.ax.set_ylabel(self.y_label, fontsize=12)
+        self.ax.set_ylabel(current_yplot, fontsize=12)
         self.ax.set_title(self.title, fontsize=14)
 
         self.ax.grid(True)
@@ -732,8 +737,8 @@ class tkMatplot:
     def change_plot_type(self):
         if self.plot_type != self.plot_options.get_selected_option():
             self.plot_type = self.plot_options.get_selected_option()
-        if self.color != self.plot_colors.get_selected_option():
-            self.color = self.plot_colors.get_selected_option()
+        # if self.color != self.plot_colors.get_selected_option():
+        #     self.color = self.plot_colors.get_selected_option()
         if self.scale != self.scale_options.get_selected_option():
             self.scale = self.scale_options.get_selected_option()
         if self.plot_style != self.plot_style_options.get_selected_option():
@@ -754,8 +759,8 @@ class tkMatplot:
             x_label,
             y_label,
             plot_type,
-            colors,
-            color,
+            color,         
+            colors,        
             x_plot,
             y_plot,
             data_type,
@@ -763,8 +768,8 @@ class tkMatplot:
             plot_style,
             sort_order,
             normalize_option,
+            legend,
         ) = self.reset_tuple
-        self.logger.info("Resetting plot to initial state")
 
         self.root.wm_title(title)
         self.root.geometry(f"{window_width}x{window_height}")
@@ -784,9 +789,22 @@ class tkMatplot:
         self.data_type = data_type
         self.numerical_bin_check = False
         self.graphing_bin_check = False
-
+        self.legend = legend
 
         self.plot()
+
+
+    def change_legend_plot_colors(self):
+        selected_color = colorchooser.askcolor(title="Choose color")[1]
+        target_color = self.plot_colors.get_selected_option()
+        self.df['color'] = self.df['color'].apply(
+            lambda x: selected_color if x == target_color else x)
+        for old_color, label in list(self.legend.items()):
+            if old_color == target_color:
+                del self.legend[old_color]
+                self.legend[selected_color] = label
+                break
+        self.accept_change_button.config(state=tk.NORMAL)
 
     def change_graph_options(self):
         self.logger.info("Creating graph options")
@@ -807,11 +825,11 @@ class tkMatplot:
         self.logger.info("Creating Plot Color Options")
         self.plot_colors = tkOptionMenu(
             master=self.right_frame,
-            options=get_random_values(get_non_red_colors()),
-            pre_selected=f"{self.color}",
-            label_text="Change Plot Color",
-            command=self.set_normal_state,
-            colors=get_non_red_colors_name_hex(),
+            options=self.df['color'].unique(),
+            pre_selected=f"{list(self.df['color'].unique())[0]}",
+            label_text="Change Plot Colors",
+            command=self.change_legend_plot_colors,
+            colors={x: x for x in self.df['color'].unique()},
         )
         self.plot_colors.grid(row=1, column=3, padx=(20, 0))
         self.logger.info("Plot Color Options created")
@@ -885,7 +903,7 @@ class tkMatplot:
 
         if self.df[self.x_plot].dtype == "object":
             self.logger.info("Creating Bin Button")
-            self.bin_button = tk.Button(self.right_frame, text='Create Bins?', command=self.bin_creation)
+            self.bin_button = tkOptionMenu(master=self.right_frame, options=['Manual', 'By Colors'], pre_selected='Manual', command=self.bin_creation, label_text='Create Groupings')
             self.bin_button.grid(row=6, column=1)
             self.logger.info("Bin Button created")
         else:
@@ -909,8 +927,11 @@ class tkMatplot:
 
 
     def bin_creation(self):
+        if self.bin_button.get_selected_option() == 'Manual':
+            bin_popup = BinPopup(self.root, {key: False for key in self.df[self.x_plot]}, callback=self.on_bins_created, path=self.default_directory)
+        else:
+            self.df.groupby("color").mean()
         self.logger.info("Creating Bin Popup")
-        bin_popup = BinPopup(self.root, {key: False for key in self.df[self.x_plot]}, callback=self.on_bins_created, path=self.default_directory)
 
     def on_bins_created(self, selected_groups):
         if self.df[self.x_plot].dtype == "object":
@@ -1260,7 +1281,7 @@ class tkOptionMenu(tk.Frame):
         super().__init__(master, *args, **kwargs)
         self.logger = Logger(__name__)
         self.colors = (
-            colors if colors else {}
+            colors if colors is not None else {}
         )  # Default to empty dict if no colors provided
 
         self.variable = tk.StringVar(master=self, value=pre_selected)
@@ -1282,11 +1303,17 @@ class tkOptionMenu(tk.Frame):
 
     def is_dark(self, color_hex):
         """Determine if a color is dark based on its hex value."""
-        r, g, b = (
-            int(color_hex[1:3], 16),
-            int(color_hex[3:5], 16),
-            int(color_hex[5:7], 16),
-        )
+        if not (isinstance(color_hex, str) and color_hex.startswith("#") and len(color_hex) == 7):
+            color_hex = name_to_hex(color_hex)
+        try:
+            r, g, b = (
+                int(color_hex[1:3], 16),
+                int(color_hex[3:5], 16),
+                int(color_hex[5:7], 16),
+            )
+        except ValueError as e:
+            raise ValueError(f"Failed to parse color hex: {color_hex}") from e
+        
         brightness = (r * 299 + g * 587 + b * 114) / 1000
         return brightness < 120
 
