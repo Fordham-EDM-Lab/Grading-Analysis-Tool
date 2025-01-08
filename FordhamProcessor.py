@@ -679,7 +679,7 @@ def dataCleanup(df):
     df = df[df['FinLetterGrade'].isin(['A', 'A-', 'B+', 'B', 'B-', 'C+', 'C','C-', 'D', 'F', 'P'])]
 
 
-    df_crsc = pd.read_csv("/home/mariom/Work/Fordham/labs/Fall24/final-project-CF/unique-crscode.csv")
+    df_crsc = pd.read_csv("crs-to-dept.csv")
 
  # Ensure other values are returned unchanged
 
@@ -706,12 +706,14 @@ def dataCleanup(df):
     # Step 3: Merge with df_crsc to add CRC column
 
 
-    df = df.merge(df_crsc[["Department", "CRC"]], on="Department", how="left")
+    df = df.drop(columns="CourseCode")
+
+
+    df = df.merge(df_crsc[["Department", "CourseCode"]], on="Department", how="left")
 
 
     #
     # # Step 4: Create the "CourseCode" column by conca
-    df = df.drop(columns="CourseCode")
     df["CourseCode"] = df["CRC"].astype(str) + " " + df["CourseNum"].astype(str)
 
     df['CourseCode'] = df['CourseCode'].apply(

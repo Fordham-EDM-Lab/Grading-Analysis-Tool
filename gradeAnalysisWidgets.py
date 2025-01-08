@@ -538,6 +538,7 @@ class tkMatplot:
         self.data_type = data_type
         self.graphing_bin_check = False
         self.numerical_bin_check = False
+        self.use_color_groups = False
         self.bin_selected_groups = None
         self.reset_tuple = (
             copy.deepcopy(title),           
@@ -608,22 +609,24 @@ class tkMatplot:
                 current_yplot = f"{self.normalize_option}Normalized{current_yplot}"
                 self.logger.info(f"Normalized column: {current_yplot}")
 
-            for _, bin_data in df.iterrows():
-                color = bin_data['Color']
-                bin_name = bin_data['Bin']
-                x_data = [bin_name]  # Use bin_name as x_data
-                y_data = [bin_data[current_yplot]]  # Use the aggregated y_data
+            x_data = df['Bin'] 
+            y_data = df[current_yplot]  
+            colors = df['Color']  
+            self.legend = dict(zip(df['Color'], df['Bin']))
+            
+            if self.plot_type == "line":
+                line_plot = self.ax.plot(x_data, y_data, marker="o", linestyle='-', color='black')
+                cursor = mplcursors.cursor(line_plot, hover=True)
+            elif self.plot_type == "scatter":
+                scatter_plot = self.ax.scatter(x_data, y_data, c=colors, label='Bins')
+                cursor = mplcursors.cursor(scatter_plot, hover=True)
+            elif self.plot_type == "bar":
+                bar_plot = self.ax.bar(x_data, y_data, color=colors, align='center')
+                cursor = mplcursors.cursor(bar_plot, hover=True)
 
-                if self.plot_type == "line":
-                    self.ax.plot(x_data, y_data, color=color, marker="o", label=bin_name)
-                elif self.plot_type == "scatter":
-                    self.ax.scatter(x_data, y_data, color=color, label=bin_name)
-                elif self.plot_type == "bar":
-                    self.ax.bar(x_data, y_data, color=color, label=bin_name, align='center')
 
 
-
-        elif self.numerical_bin_check and self.bin_selected_groups is not None:
+        elif self.numerical_bin_check and self.bin_selected_groups is not None and not self.use_color_groups:
             self.logger.info("Creating plot with numerical bin aggregation")
             df = self.bin_agg_tuples(df, self.bin_selected_groups, self.x_plot)
             self.logger.info(f"Sort order: {self.sort_order}")
@@ -639,15 +642,24 @@ class tkMatplot:
                 bin_name = bin_data[1]['Bin']
                 x_data = [bin_name]
                 y_data = [bin_data[1][current_yplot]]
+
                 if self.plot_type == "line":
-                    self.ax.plot(x_data, y_data, marker="o", label=bin_name)
+                    line_plot = self.ax.plot(x_data, y_data, marker="o", label=bin_name)
+                    cursor = mplcursors.cursor(line_plot, hover=True)
                 elif self.plot_type == "scatter":
-                    self.ax.scatter(x_data, y_data, label=bin_name)
+                    scatter_plot = self.ax.scatter(x_data, y_data, label=bin_name)
+                    cursor = mplcursors.cursor(scatter_plot, hover=True)
                 elif self.plot_type == "bar":
-                    self.ax.bar(x_data, y_data, label=bin_name)
+                    bar_plot = self.ax.bar(x_data, y_data, label=bin_name)
+                    cursor = mplcursors.cursor(bar_plot, hover=True)
+
 
         else:
             self.logger.info("Creating plot without bin aggregation")
+            if self.use_color_groups:
+                df = self.color_bin_agg(self.df)
+                df['legend'] = df['color'].map(self.legend)
+
             self.logger.info(f"Sort order: {self.sort_order}")
             self.original_index = df.index.copy()
             df = self.sort_dataframe(df, sort_order=self.sort_order, by=current_yplot)
@@ -658,28 +670,33 @@ class tkMatplot:
                 current_yplot = f"{self.normalize_option}Normalized{current_yplot}"
                 self.logger.info(f"Normalized column: {current_yplot}")
 
+            x_data = df['legend'] if self.use_color_groups else df[self.x_plot]
+
             if self.plot_type == "line":
-                line_plot = self.ax.plot(df[self.x_plot], df[current_yplot], color=df['color'].iloc[0])
+                line_plot = self.ax.plot(x_data, df[current_yplot], color=df['color'].iloc[0])
                 cursor = mplcursors.cursor(line_plot, hover=True)
             elif self.plot_type == "scatter":
-                scatter_plot = self.ax.scatter(df[self.x_plot], df[current_yplot], color=df['color'])
+                scatter_plot = self.ax.scatter(x_data, df[current_yplot], color=df['color'])
                 cursor = mplcursors.cursor(scatter_plot, hover=True)
             elif self.plot_type == "bar":
-                bar_plot = self.ax.bar(df[self.x_plot], df[current_yplot], color=df['color'])
+                bar_plot = self.ax.bar(x_data, df[current_yplot], color=df['color'])
                 cursor = mplcursors.cursor(bar_plot, hover=True)
                 self.ax.set_ylim(0, df[current_yplot].max() + 1)
 
-        excluded_columns = ['kurtosis',	'skewness',	'CoV(%)', 'ModeGPA', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D', 'F', 'color', 'avg_gpa_change', 'avg_gpaw_change']
-
-        @cursor.connect("add")
-        def on_add(sel):
-            index = sel.index
-            annotation_text = []
-            for col in df.columns:
-                if col not in excluded_columns:
-                    col_value = df[col].iloc[index]
-                    annotation_text.append(f"{col}: {col_value}")
-            sel.annotation.set_text("\n".join(annotation_text))
+        if cursor:
+            @cursor.connect("add")
+            def on_add(sel):
+                index = sel.index
+                annotation_text = []
+                excluded_columns = [
+                    'kurtosis', 'skewness', 'CoV(%)', 'ModeGPA', 'A', 'A-', 'B+', 'B', 'B-', 
+                    'C+', 'C', 'C-', 'D', 'F', 'color', 'avg_gpa_change', 'avg_gpaw_change'
+                ]
+                for col in df.columns:
+                    if col not in excluded_columns:
+                        col_value = df[col].iloc[index]
+                        annotation_text.append(f"{col}: {col_value}")
+                sel.annotation.set_text("\n".join(annotation_text))
 
 
         legend_elements = [
@@ -706,6 +723,8 @@ class tkMatplot:
 
         if self.graphing_bin_check:
             xplot='Bin'
+        elif self.use_color_groups:
+            xplot='legend'
         else:
             xplot=self.x_plot
 
@@ -713,19 +732,11 @@ class tkMatplot:
             self.left_frame.destroy()
         self.add_table(df=df, xplot=xplot ,yplot=current_yplot)
 
-        if (
-            self.plot_colors is None
-            or self.plot_options is None
-            or self.scale_options is None
-            or self.plot_style_options is None
-            or self.normalize_option is None
-            or self.sort_order is None
-        ):
-            self.change_graph_options()
-            self.accept_change_button.config(state="disabled")
-
-        else:
-            self.accept_change_button.config(state="disabled")
+        if self.right_frame is not None:
+            self.right_frame.destroy()
+        
+        self.change_graph_options()
+        self.accept_change_button.config(state="disabled")
 
         self.fig.tight_layout(rect=[1,1,1,1])
 
@@ -737,8 +748,6 @@ class tkMatplot:
     def change_plot_type(self):
         if self.plot_type != self.plot_options.get_selected_option():
             self.plot_type = self.plot_options.get_selected_option()
-        # if self.color != self.plot_colors.get_selected_option():
-        #     self.color = self.plot_colors.get_selected_option()
         if self.scale != self.scale_options.get_selected_option():
             self.scale = self.scale_options.get_selected_option()
         if self.plot_style != self.plot_style_options.get_selected_option():
@@ -790,6 +799,7 @@ class tkMatplot:
         self.numerical_bin_check = False
         self.graphing_bin_check = False
         self.legend = legend
+        self.use_color_groups = False
 
         self.plot()
 
@@ -804,6 +814,7 @@ class tkMatplot:
                 del self.legend[old_color]
                 self.legend[selected_color] = label
                 break
+        self.plot_colors.update_options(list(self.df['color'].unique()), {x: x for x in self.df['color'].unique()})
         self.accept_change_button.config(state=tk.NORMAL)
 
     def change_graph_options(self):
@@ -903,14 +914,17 @@ class tkMatplot:
 
         if self.df[self.x_plot].dtype == "object":
             self.logger.info("Creating Bin Button")
-            self.bin_button = tkOptionMenu(master=self.right_frame, options=['Manual', 'By Colors'], pre_selected='Manual', command=self.bin_creation, label_text='Create Groupings')
+            self.bin_button = tkOptionMenu(master=self.right_frame, options=['Manual', 'By Colors'], pre_selected='Manual', command=self.str_bin_creation, label_text='Create Groupings')
             self.bin_button.grid(row=6, column=1)
-            self.logger.info("Bin Button created")
         else:
             self.logger.info("Creating Numerical Bin Button")
-            numbin = NumericalBinApp(self.right_frame, row=6, column=1, set_low=min(self.df[self.x_plot]), set_high=max(self.df[self.x_plot]))
-            numbin.set_callback(self.on_bins_created)
-            self.logger.info("Numerical Bin Button created")
+            self.bin_button = tkOptionMenu(master=self.right_frame, options=['Manual', 'By Colors'], pre_selected='Manual', command=self.num_bin_creation, label_text='Create Groupings')
+            self.bin_button.grid(row=6, column=1)
+        
+        self.logger.info("Bin Button created")
+
+
+
 
     def help_create(self):
         self.logger.info("Creating Help Popup")
@@ -925,12 +939,25 @@ class tkMatplot:
             """)
         self.logger.info("Help Popup created")
 
-
-    def bin_creation(self):
+    def num_bin_creation(self):
         if self.bin_button.get_selected_option() == 'Manual':
-            bin_popup = BinPopup(self.root, {key: False for key in self.df[self.x_plot]}, callback=self.on_bins_created, path=self.default_directory)
+            self.numbin = NumericalBinApp(self.right_frame, row=7, column=1, set_low=min(self.df[self.x_plot]), set_high=max(self.df[self.x_plot]))
+            self.numbin.set_callback(self.on_bins_created)
+            self.use_color_groups = False
+            self.logger.info("Numerical Bin Button created")
         else:
-            self.df.groupby("color").mean()
+            self.use_color_groups = True
+            self.plot()
+
+    def str_bin_creation(self):
+        if self.bin_button.get_selected_option() == 'Manual':
+            self.df
+            bin_popup = BinPopup(self.root, {key: False for key in self.df[self.x_plot]}, callback=self.on_bins_created, path=self.default_directory)
+            self.use_color_groups = False
+        else:
+            self.use_color_groups = True
+            self.plot()
+
         self.logger.info("Creating Bin Popup")
 
     def on_bins_created(self, selected_groups):
@@ -941,6 +968,8 @@ class tkMatplot:
 
         self.bin_selected_groups = selected_groups
         self.plot()
+        if self.numerical_bin_check:
+            self.numbin.destroy()
 
     def set_normal_state(self):
         self.accept_change_button.config(state=tk.NORMAL)
@@ -983,10 +1012,19 @@ class tkMatplot:
             self.tree.insert(parent="", index="end", iid=i, text="", values=(x, y))
         self.logger.info("Table updated")
 
+    def color_bin_agg(self, df):
+        grades = ["A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D", "F"]
+        agg_list = ['Enrollments', 'GPA', 'GPAW', 'stddev', 'kurtosis', 'skewness', 'Sections', 'Courses', 'GPAGroupCounts'] + grades
+        agg_dict = {agg: "mean" for agg in agg_list if agg in df.columns}
+        df_agg = df.groupby('color', observed=True).agg(agg_dict).reset_index()
+        float_cols = df_agg.select_dtypes(include="float").columns
+        df_agg[float_cols] = df_agg[float_cols].round(3)
+        return df_agg
+
     def custom_bin_agg(self, df, selected_groups):
         self.logger.info("Aggregating data based on selected groups")
         grades = ["A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D", "F"]
-        agg_list = ['Enrollments', 'GPA', 'stddev', 'kurtosis', 'skewness', 'Sections', 'Courses', 'GPAGroupCounts'] + grades
+        agg_list = ['Enrollments', 'GPA', 'GPAW', 'stddev', 'kurtosis', 'skewness', 'Sections', 'Courses', 'GPAGroupCounts'] + grades
         agg_dict = {agg: "mean" for agg in agg_list if agg in df.columns}
         self.logger.info("Aggregated data dict ready")
 
@@ -1092,26 +1130,26 @@ class NumericalBinApp:
 
     def create_widgets(self, row, column):
         self.logger.info("Creating numerical bin widgets")
-        input_frame = ttk.Frame(self.root)
-        input_frame.grid(row=row, column=column, padx=5, pady=5, sticky="w")  # Stick to west (left)
+        self.input_frame = ttk.Frame(self.root)
+        self.input_frame.grid(row=row, column=column, padx=5, pady=5, sticky="w")  # Stick to west (left)
 
         self.logger.info("Creating Min, Max, and Step input fields")
-        ttk.Label(input_frame, text="Min:").grid(row=0, column=0, padx=5, pady=5)
-        self.min_entry = ttk.Entry(input_frame, width=10)
+        ttk.Label(self.input_frame, text="Min:").grid(row=0, column=0, padx=5, pady=5)
+        self.min_entry = ttk.Entry(self.input_frame, width=10)
         self.min_entry.insert(0, self.set_low)
         self.min_entry.grid(row=0, column=1, padx=5, pady=5)
 
-        ttk.Label(input_frame, text="Max:").grid(row=0, column=2, padx=5, pady=5)
-        self.max_entry = ttk.Entry(input_frame, width=10)
+        ttk.Label(self.input_frame, text="Max:").grid(row=0, column=2, padx=5, pady=5)
+        self.max_entry = ttk.Entry(self.input_frame, width=10)
         self.max_entry.insert(0, self.set_high)
         self.max_entry.grid(row=0, column=3, padx=5, pady=5)
 
-        ttk.Label(input_frame, text="Step:").grid(row=0, column=4, padx=5, pady=5)
-        self.step_entry = ttk.Entry(input_frame, width=10)
+        ttk.Label(self.input_frame, text="Step:").grid(row=0, column=4, padx=5, pady=5)
+        self.step_entry = ttk.Entry(self.input_frame, width=10)
         self.step_entry.grid(row=0, column=5, padx=5, pady=5)
 
         # Generate button
-        self.generate_button = ttk.Button(input_frame, text="Generate", command=self.generate_bins)
+        self.generate_button = ttk.Button(self.input_frame, text="Generate", command=self.generate_bins)
         self.generate_button.grid(row=0, column=6, padx=5, pady=5)
         self.logger.info("Numerical bin widgets created")
 
@@ -1139,6 +1177,15 @@ class NumericalBinApp:
         edges = np.arange(start, end + step, step)
         return [(round(edges[i], 2), round(edges[i + 1], 2)) for i in range(len(edges) - 1)]
 
+    def destroy(self):
+        """Destroy all widgets and dereference the object."""
+        self.logger.info("Destroying NumericalBinApp instance and cleaning up resources")
+        self.input_frame.destroy()
+        self.callback = None  # Remove callback reference
+        self.root = None  # Clear root reference
+        self.logger = None  # Clear logger reference
+        self.set_low = None
+        self.set_high = None
 
 class BinPopup():
     def __init__(self, master, options_dict, callback=None, path=None):
@@ -1239,7 +1286,7 @@ class BinPopup():
     def check_selection(self):
         if self.dropdown.get_selected_options():
             self.set_state_normal()
-        self.popup.after(100, self.check_selection)
+        self.popup.after(1000, self.check_selection)
 
     def set_state_normal(self):
         self.add_group_button.config(state='normal')
@@ -1336,6 +1383,30 @@ class tkOptionMenu(tk.Frame):
                 background=color_hex,
                 foreground="#FFFFFF" if self.is_dark(color_hex) else "#000000",
             )
+    def update_options(self, options, colors=None, pre_selected=None):
+        """Update menu options and their colors dynamically."""
+        self.logger.info("Updating options and colors")
+        
+        menu = self.option_menu["menu"]
+        menu.delete(0, "end")
+        
+        if colors is not None:
+            self.colors = colors
+        
+        for option in options:
+            menu.add_command(
+                label=option,
+                command=lambda value=option: self.variable.set(value)
+            )
+        
+        # Reapply colors to the menu
+        self.colorize_options()
+        
+        # Update pre-selected option if provided
+        if pre_selected is not None and pre_selected in options:
+            self.variable.set(pre_selected)
+        elif options:
+            self.variable.set(options[0])
 
 
 
@@ -1451,7 +1522,7 @@ class tkDropdown():
             self.master,
             text="Export Choices",
             command=self.export_to_csv,
-        ).grid(row=self.row + 2, column=self.column - 1)
+        ).grid(row=self.row + 2, column=self.column - 1 if self.column > 0 else 0)
 
         tk.Button(
             self.master,

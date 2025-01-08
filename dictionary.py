@@ -28,6 +28,7 @@ instructor_analysis_options = {
     "Instructor vs GPA": False,
     "Instructor vs Enrollment": False,
     "Enrollment vs GPA": False,
+    "GPA vs Standard Deviation": False,
     "Instructor vs Section #": False,
     "Instructor vs Course #": False,
     "Instructor vs Standard Deviation": False,
