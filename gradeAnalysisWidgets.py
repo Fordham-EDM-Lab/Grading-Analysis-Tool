@@ -1522,13 +1522,13 @@ class tkDropdown():
             self.master,
             text="Export Choices",
             command=self.export_to_csv,
-        ).grid(row=self.row + 2, column=self.column - 1 if self.column > 0 else 0)
+        ).grid(row=self.row, column=self.column + 1 if self.column > 0 else 0)
 
         tk.Button(
             self.master,
             text="Import Choices",
             command=self.import_from_csv,
-        ).grid(row=self.row + 2, column=self.column)
+        ).grid(row=self.row +1, column=self.column + 1)
 
     def update_command(self, *args):
         selected_key = self.dropdown.get()

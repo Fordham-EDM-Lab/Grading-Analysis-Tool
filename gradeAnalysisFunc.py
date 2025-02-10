@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import os
 import tkinter as tk
-
+from matplotlib.lines import Line2D
 from requests.packages import target
 
 import gradeAnalysisWidgets as gaw
@@ -300,6 +300,7 @@ def DepartmentAnalysis(
         graph_grade_distribution(
             df=deptTable,
             column="Department",
+            legend = legend,
         )
 
     dic.reset_all_false()
@@ -357,6 +358,7 @@ def InstructorAnalysis(
         graph_grade_distribution(
             df=instTable,
             column="FacultyID",
+            legend = legend,
         )
 
     if dic.instructor_analysis_options["Instructor vs GPA"]:
@@ -631,6 +633,7 @@ def MajorAnalysis(
         graph_grade_distribution(
             df=mjrTable,
             column="Major",
+            legend = legend,
         )
 
 
@@ -856,6 +859,7 @@ def section_analysis(
         graph_grade_distribution(
             df=sectionTable,
             column="UniqueCourseID",
+            legend = legend,
         )
 
     dic.reset_all_false()
@@ -1010,6 +1014,7 @@ def CourseAnalysis(
         graph_grade_distribution(
             df=crsTable,
             column="CourseCode",
+            legend = legend,
         )
 
     dic.reset_all_false()
@@ -1120,6 +1125,7 @@ def student_level_analysis(
         graph_grade_distribution(
             df=df_agg,
             column="StudentLevel",
+            legend = legend,
         )
 
 
@@ -1239,6 +1245,7 @@ def course_level_analysis(
         graph_grade_distribution(
             df=df_agg,
             column="CourseLevel",
+            legend = legend,
         )
 
 
@@ -1320,6 +1327,7 @@ def student_analysis(
         graph_grade_distribution(
             df=df_agg,
             column="SID",
+            legend = legend,
         )
 
     dic.reset_all_false()
@@ -1391,6 +1399,7 @@ def normalize_rows_by_grade_frequency(df, column, grade_columns):
 def graph_grade_distribution(
         df,
         column,
+        legend,
     ):
         grades = ["A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D", "F"]
 
@@ -1440,6 +1449,12 @@ def graph_grade_distribution(
             # Store the scatter plot and its original facecolors and sizes
             scatter_plots[label] = (scatter, {'facecolors': scatter.get_facecolor(), 'sizes': scatter.get_sizes()})
 
+        legend_elements = [
+            Line2D([0], [0], color=color, lw=4, label=label)
+            for color, label in legend.items()
+        ]
+
+        ax.legend(handles=legend_elements, title="Legend")
         ax.set_xlabel("Letter Grades", fontsize=12)
         ax.set_ylabel("Number of Each Grade (normalized)", fontsize=10)
         ax.set_title("Frequency of Letter Grades", fontsize=14)
