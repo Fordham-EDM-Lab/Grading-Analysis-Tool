@@ -4,6 +4,8 @@ This tool was created by **[Mario Marku](https://www.linkedin.com/in/mario-marku
 
 The Tools offical Manual can be found **[here](https://docs.google.com/document/d/1gPt0qbNTj5_9tArIpUflvuOl0yOItwcN9cgwobPswDY/edit?usp=sharing)** alongisde an extensive Data Dictionary found **[here](https://docs.google.com/spreadsheets/d/1ACtguaegP0V97QovjSUgXp3LoO648-M-nUrQ_6GN7mQ/edit?usp=sharing)** detailing how this tool is used.
 
+This GitHub also contains our offical paper showcasing the tool with real data from a large university. Administrators and faculty from universities are encouraged to give it a read if they are curious of the tools capabilities and how it might help them.
+
 ---
 ## Prerequisites
 
