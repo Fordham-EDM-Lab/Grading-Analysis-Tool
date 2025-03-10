@@ -1,9 +1,8 @@
 # Grading Analysis Tool
 
-This tool was created by **Mario Marku** to simplify grading data analysis for educators without requiring programming or data analytics skills. Its intuitive interface streamlines the process of exploring student and course performance data.
+This tool was created by **[Mario Marku](https://www.linkedin.com/in/mario-marku-384732247/)** with advisement from **[Dr. Gary Weiss](https://storm.cis.fordham.edu/~gweiss/)** and **[Dr. Daniel Leeds](https://storm.cis.fordham.edu/leeds/)** to simplify grading data analysis for educators without requiring programming or data analytics skills. Its intuitive interface streamlines the process of exploring student and course performance data.
 
 ---
-
 ## Prerequisites
 
 1.  **Install Python 3**
