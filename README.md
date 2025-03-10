@@ -2,6 +2,8 @@
 
 This tool was created by **[Mario Marku](https://www.linkedin.com/in/mario-marku-384732247/)** with advisement from **[Dr. Gary Weiss](https://storm.cis.fordham.edu/~gweiss/)** and **[Dr. Daniel Leeds](https://storm.cis.fordham.edu/leeds/)** to simplify grading data analysis for educators without requiring programming or data analytics skills. Its intuitive interface streamlines the process of exploring student and course performance data.
 
+The Tools offical Manual can be found **here(https://docs.google.com/document/d/1gPt0qbNTj5_9tArIpUflvuOl0yOItwcN9cgwobPswDY/edit?usp=sharing)** alongisde an extensive Data Dictionary found **here(https://docs.google.com/spreadsheets/d/1ACtguaegP0V97QovjSUgXp3LoO648-M-nUrQ_6GN7mQ/edit?usp=sharing)** detailing how this tool is used.
+
 ---
 ## Prerequisites
 
