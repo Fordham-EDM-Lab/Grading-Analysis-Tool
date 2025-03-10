@@ -45,13 +45,13 @@ This tool was created by **Mario Marku** to simplify grading data analysis for e
    ```
 ## After Installation
    Simply run
-      ```bash
+   ```bash
         grade-analysis
-      ```
+   ```
    Or
-      ```bash
+   ```bash
         python3 -m src.gradeAnalysisGUI
-      ```
+   ```
 Thank you for using the Grading Analysis Tool.
 
 
