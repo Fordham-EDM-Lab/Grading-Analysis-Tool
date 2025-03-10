@@ -1260,7 +1260,6 @@ class GradingAnalysisTool:
             options_dict={course: False for course in gaf.get_unique_dept(self.dataframe).flatten()},
             initial_message="Select Department",
             allow_multiple_entries=True,
-            filename="department_selections",
         )
 
         self.csv_checkbox_widget(

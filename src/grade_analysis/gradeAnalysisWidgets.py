@@ -450,14 +450,15 @@ class FileOpener:
             subprocess.Popen(["xdg-open", self.file_path])
             self.logger.debug("Opened file using xdg-open")
         elif current_platform == "Windows":
-            subprocess.Popen(["cmd", "/c", "start", self.file_path], shell=True)
-            self.logger.debug("Opened file using Windows cmd")
+            os.startfile(self.file_path)  # Built-in Windows call
+            self.logger.debug("Opened file using os.startfile")
         elif current_platform == "Darwin":  # macOS
             subprocess.Popen(["open", self.file_path])
             self.logger.debug("Opened file on macOS using open")
         else:
             self.logger.warning("Unsupported platform for file opening")
             return
+
 
 
 class ChangeTitles:
@@ -1289,7 +1290,6 @@ class BinPopup():
         self.options_dict = options_dict
         self.popup = tk.Toplevel(master=master)
         self.popup.title('Create Bins for Grouping')
-        self.path = path if path else os.path.join(os.getcwd(), 'export.txt')
         self.window_length = 500
         self.window_height = 500
         self.popup.geometry(f"{self.window_length}x{self.window_height}")
@@ -1352,7 +1352,7 @@ class BinPopup():
         self.dropdown = tkDropdown(
             master=self.group_frame, options_dict=self.options_dict, row=0, column=0,
             initial_message='Create a Group', allow_multiple_entries=True,
-            filename='group_options', scrolltextbox_height=5, scrolltextbox_width=20, path=self.path
+            scrolltextbox_height=5, scrolltextbox_width=20
         )
         self.dropdown.dropdown_grid(padx=60)
 
@@ -1674,7 +1674,7 @@ class tkDropdown():
         self.selected_options.clear()
 
 
-    def save_dataframe_with_dialog(df, return_path=False):
+    def save_dataframe_with_dialog(self, df, return_path=False):
         """
         Opens a file dialog to let the user choose where to save the dataframe as a CSV.
         
@@ -1685,7 +1685,7 @@ class tkDropdown():
         root = tk.Tk()
         root.withdraw()  # Hide the Tkinter root window
 
-        file_path = tk.filedialog.asksaveasfilename(
+        file_path = asksaveasfilename(
             defaultextension=".csv",
             filetypes=[("CSV files", "*.csv")],
             title="Save CSV File",
@@ -1695,7 +1695,7 @@ class tkDropdown():
 
         if file_path:  # Ensure user didn't cancel the dialog
             df.to_csv(file_path, index=False)
-            print(f"File saved to: {file_path}")
+            print("\n\nFile Created:", f" {file_path}\n\n")
             return file_path if return_path else None
         else:
             print("File save canceled.")
@@ -1710,11 +1710,17 @@ class tkDropdown():
             csv_df['Label'] = pd.Series(labels)
             csv_df['LabelColor'] = pd.Series(colors)
             self.save_dataframe_with_dialog(csv_df)
-            print("\n\nFile Created:", f" {self.path}\n\n")
         else:
-            with open(self.path, "w") as file:
+            path = asksaveasfilename(
+                defaultextension=".txt",
+                filetypes=[("Text files", "*.txt")],
+                title="Save Text File",
+                initialdir=os.getcwd(),
+                initialfile="exported_category.txt",
+            )
+            with open(path, "w") as file:
                 file.write(self.dropdown.get())
-                print("\n\nFile Created:", f" {self.path}\n\n")
+                print("\n\nFile Created:", f" {path}\n\n")
 
 
     def import_from_csv(self):
@@ -1742,7 +1748,7 @@ class tkDropdown():
             self.selected_options.update(selected_options)
             self.color_labels.update(color_labels)
 
-            print(f"\n\nImported Data from {self.path}\n")
+            print(f"\n\nImported Data from {path}\n")
         else:
             path = tk.filedialog.askopenfilename()
             with open(path, "r") as file:

@@ -305,7 +305,6 @@ def return_filtered_dataframe(df: pd.DataFrame, column: str, values: list) -> pd
 
 
 def find_column_by_value(df, value):
-    print(value)
     for col in df.columns:
         if df[col].eq(value).any():
             return col
