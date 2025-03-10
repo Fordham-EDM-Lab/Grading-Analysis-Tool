@@ -27,7 +27,7 @@ The Tools offical Manual can be found **[here](https://docs.google.com/document/
 
 1.  **Clone or Download this Repository**
     ```bash
-    git clone [https://github.com/Fordham-EDM-Lab/Grading-Analysis-Tool](https://github.com/Fordham-EDM-Lab/Grading-Analysis-Tool)
+    git clone https://github.com/Fordham-EDM-Lab/Grading-Analysis-Tool
     ```
 2.  **Install Dependencies (Inside the Virtual Environment, if created)**
     ```bash
