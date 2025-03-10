@@ -31,9 +31,9 @@ import pandas as pd
 import tkinter.scrolledtext as tkst
 from functools import partial
 from tkinter import colorchooser
-import dictionary
+import grade_analysis.dictionary
 import csv
-import gradeAnalysisFunc
+import grade_analysis.gradeAnalysisFunc
 from matplotlib.lines import Line2D
 import webcolors
 import copy
@@ -1630,8 +1630,8 @@ class tkDropdown():
 
     def update_dict(self, event):
         selected_key = self.dropdown.get()
-        if self.current_key is not None and dictionary.is_option_analysis(selected_key):
-            dictionary.change_analysis_value(self.current_key, False)
+        if self.current_key is not None and grade_analysis.dictionary.is_option_analysis(selected_key):
+            grade_analysis.dictionary.change_analysis_value(self.current_key, False)
         self.current_key = selected_key
         if (
             selected_key in self.options_dict

@@ -16,8 +16,8 @@ import tkinter as tk
 from matplotlib.lines import Line2D
 from requests.packages import target
 
-import gradeAnalysisWidgets as gaw
-import dictionary as dic
+import grade_analysis.gradeAnalysisWidgets as gaw
+import grade_analysis.dictionary as dic
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib.figure import Figure
 from tabulate import tabulate

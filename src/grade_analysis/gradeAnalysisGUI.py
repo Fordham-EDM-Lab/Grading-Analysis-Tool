@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox
-import gradeAnalysisFunc as gaf
-import gradeAnalysisWidgets as gaw
+import grade_analysis.gradeAnalysisFunc as gaf
+import grade_analysis.gradeAnalysisWidgets as gaw
 from tkinter import filedialog
 from tkinter import ttk
 from functools import partial
@@ -10,8 +10,8 @@ import os
 import sys
 import subprocess
 import json
-import dictionary as dic
-from gradeAnalysisFunc import return_filtered_dataframe
+import grade_analysis.dictionary as dic
+from grade_analysis.gradeAnalysisFunc import return_filtered_dataframe
 # from ctypes import windll
 # windll.shcore.SetProcessDpiAwareness(1)
 
