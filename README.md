@@ -34,24 +34,24 @@ This tool was created by **Mario Marku** to simplify grading data analysis for e
 1. **Clone or Download this Repository**
    ```bash
    git clone https://github.com/Fordham-EDM-Lab/Grading-Analysis-Tool
-
+   ```
 2. **Install Dependencies (Inside the Virtual Environment, if created)**  
   ```bash
   pip install -e .
   ```
 Or (if you want to bypass warnings about system packages):
-```bash
-  pip install -e . --break-system-packages
-```
+   ```bash
+     pip install -e . --break-system-packages
+   ```
 ## After Installation
 Simply run
-```bash
-  grade-analysis
-```
+   ```bash
+     grade-analysis
+   ```
 Or
-```bash
-  python3 -m src.gradeAnalysisGUI
-```
+   ```bash
+     python3 -m src.gradeAnalysisGUI
+   ```
 
 
 
