@@ -1,0 +1,50 @@
+[build-system]
+requires = [
+    "setuptools>=61.0",
+    "wheel"
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "GradeAnalysisTool"
+version = "1.0"
+description = "A short description of your grading analysis tool."
+authors = [
+    { name = "Mario Marku", email = "mariom@fordham.edu" }
+]
+readme = "README.md"
+
+[project.license]
+text = "MIT"
+
+dependencies = [
+	"matplotlib",
+	"mplcursors",
+	"numpy",
+	"pandas",
+	"prompt_toolkit",
+	"Requests",
+	"scikit_learn",
+	"seaborn",
+	"tabulate",
+	"ttkwidgets",
+	"webcolors",
+]
+
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+
+
+[project.entry-points."gui_scripts"]
+grade-analysis = "grade_analysis.gradeAnalysisGUI:main"
+
+[tool.setuptools]
+include-package-data = true  # same as include_package_data=True
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-dir]
+"" = "src"
