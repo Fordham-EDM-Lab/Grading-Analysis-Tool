@@ -39,19 +39,20 @@ This tool was created by **Mario Marku** to simplify grading data analysis for e
   ```bash
   pip install -e .
   ```
-Or (if you want to bypass warnings about system packages):
+   Or (if you want to bypass warnings about system packages):
    ```bash
      pip install -e . --break-system-packages
    ```
 ## After Installation
-Simply run
-   ```bash
-     grade-analysis
-   ```
-Or
-   ```bash
-     python3 -m src.gradeAnalysisGUI
-   ```
+   Simply run
+      ```bash
+        grade-analysis
+      ```
+   Or
+      ```bash
+        python3 -m src.gradeAnalysisGUI
+      ```
+Thank you for using the Grading Analysis Tool.
 
 
 
