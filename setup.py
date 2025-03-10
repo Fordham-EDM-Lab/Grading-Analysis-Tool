@@ -1,23 +1,24 @@
 from setuptools import setup, find_packages
 
-# Read dependencies from requirements.txt
 with open("requirements.txt") as f:
     required = f.read().splitlines()
 
 setup(
     name="GradeAnalysisTool",
     version="1.0",
-    packages=find_packages(where="src"),  # Finds all packages inside src/
-    package_dir={"": "src"},  # Specifies src as the package root
-    install_requires=required,  # Install dependencies from requirements.txt
+    packages=find_packages(where="src"),
+    package_dir={"": "src"},
+    install_requires=required,
     entry_points={
         "gui_scripts": [
-            "grade-analysis=gradeAnalysisGUI:main",  # Creates a runnable command
+            # Notice: the folder name is now grade_analysis
+            "grade-analysis=grade_analysis.gradeAnalysisGUI:main",
         ],
     },
-    include_package_data=True,  # Ensures data files inside packages are included
+    include_package_data=True,
     classifiers=[
         "Programming Language :: Python :: 3",
         "Operating System :: OS Independent",
     ],
 )
+
