@@ -1,0 +1,11 @@
+matplotlib
+mplcursors
+numpy
+pandas
+prompt_toolkit
+Requests
+scikit_learn
+seaborn
+tabulate
+ttkwidgets
+webcolors
