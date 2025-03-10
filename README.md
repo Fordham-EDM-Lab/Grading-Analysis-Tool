@@ -21,13 +21,6 @@ The Tools offical Manual can be found **[here](https://docs.google.com/document/
         # On macOS/Linux:
         source venv/bin/activate
         ```
-    * If you **choose not** to use a virtual environment (not recommended), you can install system-wide.
-        If pip refuses to install due to potential conflicts, add:
-        ```bash
-        pip install -e . --break-system-packages
-        ```
-        This **overrides** pip’s default protections, and may affect system packages.
-
 ---
 
 ## Installation
@@ -40,10 +33,12 @@ The Tools offical Manual can be found **[here](https://docs.google.com/document/
     ```bash
     pip install -e .
     ```
-    Or (if you want to bypass warnings about system packages):
-    ```bash
-    pip install -e . --break-system-packages
-    ```
+ * If you **choose not** to use a virtual environment (not recommended), you can install system-wide.
+     If pip refuses to install due to potential conflicts, add:
+     ```bash
+     pip install -e . --break-system-packages
+     ```
+     This **overrides** pip’s default protections, and may affect system packages.
 
 ## After Installation
 
