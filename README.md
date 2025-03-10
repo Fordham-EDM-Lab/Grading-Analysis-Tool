@@ -1,16 +1,57 @@
-# Grading-Analysis-Tool
-This is an Educational Data Mining tool. It reads data from an university and makes analysis of its contents. Created by Mario Marku, Luisa Rosa, with Dr.Daniel Leeds, Dr.Gary Weiss, and Hyun Jeong at Fordham University.
+# Grading Analysis Tool
 
-The main goal is to analyze instructor grading in a more sophisticated way. In the same way that students have freedom when selecting university courses, instructors can have different grading criteria and policies. Usually, professors assign grades with great discretion. Grading can impact how hard a student prepares for an exam and the effort put into the class. It is essential to understand these different grading patterns.
+This tool was created by **Mario Marku** to simplify grading data analysis for educators without requiring programming or data analytics skills. Its intuitive interface streamlines the process of exploring student and course performance data.
 
-Our publicly available python-based educational data mining tool helps to identify instructor and department grading patterns, consistently having high (or low) grading over many years, courses, and instructors. It performs detailed data analysis and generates understandable instructor grading assessments.
+---
 
-Library free for use, required citation using ... in any resulting publications.
-Library free for redistribution provided you retain the author attributions above.
+## Prerequisites
 
-The following packages are required for installation before use: numpy, pandas, csv, matplotlib
+1. **Install Python 3**  
+   - **Windows**: [https://www.python.org/downloads/windows/](https://www.python.org/downloads/windows/)  
+   - **macOS**: [https://www.python.org/downloads/macos/](https://www.python.org/downloads/macos/)  
+   - **Linux**: Use your distro’s package manager or download from [https://www.python.org/downloads/](https://www.python.org/downloads/)
 
-"FordhamProcessor.py" is used by our university only to clean and prepare the data for analysis. The data input should meet some requirements before initializing the tool. --> TODO: A document explaining the requirements for the input data will be uploaded soon.
-"CreateTables.py" is necessary so that the tool can perform efficiently without reloading every time it is used (wasting about 20 minutes). A user should run this file if it is the first time they will use this tool OR if there were any changes made to the data input file. Otherwise, the user can run the tool without any pre-processing.
-"Tool.py" is the actual data analysis tool. It performs the calculations and delivers conclusions about the data.
---> TODO: Tool still needs to be updated so that the user interface is more intuitive, include a notification that a file was saved in the current folder, and save each terminal session into a .txt file so that the results are outputted to the user are saved for future reference.
+2. **(Recommended) Create a Virtual Environment**  
+   - This prevents conflicts with system-wide packages:
+     ```bash
+     python3 -m venv venv
+     # On Windows:
+     venv\Scripts\activate
+     # On macOS/Linux:
+     source venv/bin/activate
+     ```
+   - If you **choose not** to use a virtual environment (not recommended), you can install system-wide.  
+     If pip refuses to install due to potential conflicts, add:
+     ```bash
+     pip install -e . --break-system-packages
+     ```
+     This **overrides** pip’s default protections, and may affect system packages.
+
+---
+
+## Installation
+
+1. **Clone or Download this Repository**
+   ```bash
+   git clone https://github.com/Fordham-EDM-Lab/Grading-Analysis-Tool
+
+2. **Install Dependencies (Inside the Virtual Environment, if created)**  
+  ```bash
+  pip install -e .
+  ```
+Or (if you want to bypass warnings about system packages):
+```bash
+  pip install -e . --break-system-packages
+```
+## After Installation
+Simply run
+```bash
+  grade-analysis
+```
+Or
+```bash
+  python3 -m src.gradeAnalysisGUI
+```
+
+
+
