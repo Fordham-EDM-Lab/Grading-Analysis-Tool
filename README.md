@@ -25,8 +25,23 @@ This GitHub also contains our offical paper showcasing the tool with real data f
         ```
 ---
 
-## Installation
+## Simplest Installation
 
+You can either locally download all the source code and run the tool, or the simpler method which is a direct install from PyPi.
+
+To Install from PyPi, ensure you are in the correct python enviorment (or no enviorment, not recommended) and run
+```bash
+   pip install grade-analysis
+```
+Or, if you are not using an enviorment (not recommended)
+```bash
+   pip install grade-analysis --break-system-packages
+```
+After which, you can then run the GUI with the command
+```bash
+   grade-analysis
+```
+## Local Installation
 1.  **Clone or Download this Repository**
     ```bash
     git clone https://github.com/Fordham-EDM-Lab/Grading-Analysis-Tool
